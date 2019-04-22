@@ -188,7 +188,7 @@ public:
 				cout << "PLAYER COLLISION\n";
 				return true;
 			}
-			for (uint i = 0; i < gameObjs.size(); i++) { //ADDED uint instead of int
+			for (uint i = 0; i < gameObjs.size(); i++) {
 				GameObject cur = gameObjs[i];
 				if ((cur.maxx < minx && cur.maxz < minz) || (cur.minx < maxx && cur.minz < maxz)) {
 					cout << "Collision! between objects!";
@@ -242,26 +242,24 @@ public:
 
 	float cTheta = 0;
 	bool mouseDown = false;
-	bool wasdIsDown[4] = { false }; //ADDED
-	bool arrowIsDown[4] = { false }; //ADDED
+	bool wasdIsDown[4] = { false };
+	bool arrowIsDown[4] = { false };
 
 	float theta = 0;
 	float phi = 0;
 
-	float zoom = -10; //ADDED
+	float zoom = -10;
 
 	double mouseXPrev = 0;
 	double mouseYPrev = 0;
 
-	//REMOVED unused camTransformX/Z, deltaX/Y
-	vec3 playerPos; //ADDED
+	vec3 playerPos; //player position, TODO replace with the one in player
 
 	const float PI = 3.14159;
 	GamePlayer player = GamePlayer(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), PLAYER_VELOCITY);
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
-		//REMOVED some timing functions that wouldn't work in this callback anyway
 
 		if (action == GLFW_PRESS || action == GLFW_RELEASE) {
 			// movement
@@ -291,7 +289,7 @@ public:
   			arrowIsDown[3] = action == GLFW_PRESS;
   			break;
   		}
-			//TODO: add a pause button
+			//TODO: add pausing and zooming in/out
       if (action == GLFW_PRESS) {
   			switch (key) {
   			case GLFW_KEY_ESCAPE:
@@ -315,7 +313,7 @@ public:
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
 	{
-		double posX = 0, posY = 0; //REMOVED: unused variables deltaX/Y
+		double posX = 0, posY = 0;
 
 		if (action == GLFW_PRESS)
 		{
@@ -565,7 +563,7 @@ public:
 		shape2->draw(prog);
 		Model->popMatrix();
 
-		//ADDED: draws a player model at playerPos
+		//player model
 		Model->pushMatrix();
 		Model->translate(playerPos);
 		SetMaterial(2);
@@ -574,34 +572,38 @@ public:
 		Model->popMatrix();
 	}
 
-	//ADDED
+	// handles player & camera movement
 	//TODO this needs to be done real-time
-	//TODO player movement should be adjusted by camera angle
-	// but project to XZ ONLY, trash Y
-	//TODO phi and theta are unused but are probably svTheta adjacent
-	void playerCamMovement(std::shared_ptr<MatrixStack> View) {
-		float playerSpeed = 0.1f; //per-frame player speed TODO make constant and realtime
-		float cameraSpeed = 0.02f; //per-frame camera rotation speed TODO make constant and realtime
+	//TODO this needs acceleration for drift
+	void playerCamMovement(std::shared_ptr<MatrixStack> View)
+	{
+		//TODO after implementing real-time, make these two values global constants
+		float playerSpeed = 0.1f; //player speed
+		float cameraSpeed = 0.02f; //camera rotation speed
+		float almostUp = 1.56f; //this is nearly 90 degrees (90 flips the camera)
 
-		if (arrowIsDown[0]) phi += cameraSpeed;
+		// camera rotation
+		if (arrowIsDown[0]) phi = std::min(phi + cameraSpeed, almostUp);
 		if (arrowIsDown[1]) theta -= cameraSpeed;
-		if (arrowIsDown[2]) phi -= cameraSpeed;
+		if (arrowIsDown[2]) phi = std::max(phi - cameraSpeed, 0.0f);
 		if (arrowIsDown[3]) theta += cameraSpeed;
 
-		vec3 playerForward = vec3(cos(phi) * -sin(theta),
-                            	0,
-                            	cos(phi) * -cos(theta));
-		vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
-
+		//player and camera orientation
 		vec3 cameraForward = vec3(cos(phi) * -sin(theta),
                             	sin(phi),
                             	cos(phi) * -cos(theta));
+		vec3 playerForward = vec3(-sin(theta),
+                            	0,
+                            	-cos(theta));
+		vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
 
+		// player movement
 		if (wasdIsDown[0]) playerPos -= playerForward * playerSpeed;
   	if (wasdIsDown[1]) playerPos -= playerLeft * playerSpeed;
   	if (wasdIsDown[2]) playerPos += playerForward * playerSpeed;
   	if (wasdIsDown[3]) playerPos += playerLeft * playerSpeed;
 
+		// place the camera, pointed at the player
 		vec3 cameraPos = playerPos - (cameraForward * zoom);
 		View->lookAt(cameraPos, playerPos, vec3(0, 1, 0));
 	}
@@ -622,15 +624,13 @@ public:
 		// Create the matrix stacks
 		auto Projection = make_shared<MatrixStack>();
 		auto View = make_shared<MatrixStack>();
-		//REMOVED FBOView
 		auto Model = make_shared<MatrixStack>();
 		// Apply perspective projection.
 		Projection->pushMatrix();
 		Projection->perspective(45.0f, aspect, 0.01f, 100.0f);
 		//View for fps camera
 		View->pushMatrix();
-		playerCamMovement(View); //ADDED
-		//REMOVED a bunch of camera transforms
+		playerCamMovement(View);
 
 		//Draw our scene - two meshes - right now to a texture
 		prog->bind();
@@ -642,7 +642,7 @@ public:
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuf[0]);
 		Model->pushMatrix();
-			renderScene(View, Model); //REMOVED FB0View, replaced with normal View
+			renderScene(View, Model); //note: this was previously FBOView
 		Model->popMatrix();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
