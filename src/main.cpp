@@ -66,7 +66,10 @@ public:
 	private:
 		vec3 position;
 		vec3 direction;
-		float velocity;
+		vec3 velocity;
+		float camPhi;
+		float camTheta;
+		float camZoom;
 		float minx = position.x - PLAYER_RADIUS;
 		float minz = position.z - PLAYER_RADIUS;
 		float maxx = position.x + PLAYER_RADIUS;
@@ -75,46 +78,76 @@ public:
 	public:
 		vec3 getPos() { return position; }
 		vec3 getDir() { return direction; }
-		float getVel() { return velocity; }
+		vec3 getVel() { return velocity; }
 		float getMinx() { return minx; }
 		float getMinz() { return minz; }
 		float getMaxx() { return maxx; }
 		float getMaxz() { return maxz; }
 
-		GamePlayer(vec3 position, vec3 direction, float velocity) {
+		GamePlayer(vec3 position, vec3 direction, vec3 velocity) {
 			this->position = position;
 			this->direction = direction;
 			this->velocity = velocity;
+			this->camPhi = 0;
+			this->camTheta = 0;
+			this->camZoom = -10; //TODO make this positive
 		}
 
-		vec3 update(int key, float theta) {
-			switch (key) {
-			case(1):
-				position.x -= (float)cos(theta) * velocity;
-				position.z -= (float)sin(theta) * velocity;
-				break;
-			case(2):
-				position.x += (float)cos(theta) * velocity;
-				position.z += (float)sin(theta) * velocity;
-				break;
-			case(3):
-				position.z -= (float)cos(theta) * velocity;
-				position.x += (float)sin(theta) * velocity;
-				break;
-			case(4):
-				position.z += (float)cos(theta) * velocity;
-				position.x -= (float)sin(theta) * velocity;
-				break;
-			}
+		/* moves the player and camera */
+		//TODO this needs to be done real-time
+		//TODO the View logic can probably be abstracted out
+		vec3 update(std::shared_ptr<MatrixStack> View, bool *arrowIsDown, bool *wasdIsDown) {
+			//TODO after implementing real-time, make these values constants
+			float playerAccel = 0.01f; //player acceleration
+			float maxPlayerSpeed = 0.1f; // maximum player speed TODO this isn't used yet
+
+			//TODO implement drifty camera too
+			float cameraSpeed = 0.02f; //camera rotation acceleration
+
+			// camera rotation
+			if (arrowIsDown[0]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); //this is nearly 90 degrees in radians; hitting 90 will flip the camera
+			if (arrowIsDown[1]) camTheta -= cameraSpeed;
+			if (arrowIsDown[2]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); //no clipping thru the floor
+			if (arrowIsDown[3]) camTheta += cameraSpeed;
+
+			//player and camera orientation
+			vec3 cameraForward = vec3(cos(camPhi) * -sin(camTheta),
+	                            	sin(camPhi),
+	                            	cos(camPhi) * -cos(camTheta));
+			//TODO normalize?
+			vec3 playerForward = vec3(-sin(camTheta),
+	                            	0,
+	                            	-cos(camTheta));
+			vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
+
+			// generally, vec3 velocity += (vec3 acceleration * float timePassed)
+			vec3 zAccel = playerForward * playerAccel;
+			vec3 xAccel = playerLeft * playerAccel;
+
+			//player velocity
+			//friction TODO look up actual friction function
+			velocity *= 0.9f;
+			//player controls
+			if (wasdIsDown[0]) velocity -= zAccel;
+	  	if (wasdIsDown[1]) velocity -= xAccel;
+	  	if (wasdIsDown[2]) velocity += zAccel;
+	  	if (wasdIsDown[3]) velocity += xAccel;
+
+			position += velocity;
+
+			/*QUESTION is this supposed to be moving the collision box? if so, do
+			we need to store it?? */
 			minx = position.x - HEAD_RADIUS;
 			minz = position.z - HEAD_RADIUS;
 			maxx = position.x + HEAD_RADIUS;
 			maxz = position.z + HEAD_RADIUS;
 
-			//cout << "pminx: " << minx << " pminz: " << minz << "pmaxx: " << maxx << "pmaxz: " << maxz << endl;
+			// place the camera, pointed at the player
+			//TODO this can be abstracted out if needed
+			vec3 cameraPos = position - (cameraForward * camZoom);
+			View->lookAt(cameraPos, position, vec3(0, 1, 0));
 
-			vec3 newPos = position;
-			return newPos;
+			return position;
 		}
 	};
 
@@ -256,7 +289,7 @@ public:
 	vec3 playerPos; //player position, TODO replace with the one in player
 
 	const float PI = 3.14159;
-	GamePlayer player = GamePlayer(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), PLAYER_VELOCITY);
+	GamePlayer player = GamePlayer(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
@@ -565,27 +598,27 @@ public:
 
 		//player model
 		Model->pushMatrix();
-		Model->translate(playerPos);
+		Model->translate(player.getPos());
 		SetMaterial(2);
 		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
 		playerShape->draw(prog);
 		Model->popMatrix();
 	}
 
+	//NOTE: this is now in the player class
 	// handles player & camera movement
 	//TODO this needs to be done real-time
 	//TODO this needs acceleration for drift
-	void playerCamMovement(std::shared_ptr<MatrixStack> View)
+	/*void playerCamMovement(std::shared_ptr<MatrixStack> View)
 	{
-		//TODO after implementing real-time, make these two values global constants
+		//TODO after implementing real-time, make these values global constants
 		float playerSpeed = 0.1f; //player speed
 		float cameraSpeed = 0.02f; //camera rotation speed
-		float almostUp = 1.56f; //this is nearly 90 degrees (90 flips the camera)
 
 		// camera rotation
-		if (arrowIsDown[0]) phi = std::min(phi + cameraSpeed, almostUp);
+		if (arrowIsDown[0]) phi = std::min(phi + cameraSpeed, 1.56f); //this is nearly 90 degrees in radians; hitting 90 will flip the camera
 		if (arrowIsDown[1]) theta -= cameraSpeed;
-		if (arrowIsDown[2]) phi = std::max(phi - cameraSpeed, 0.0f);
+		if (arrowIsDown[2]) phi = std::max(phi - cameraSpeed, 0.0f); //no clipping thru the floor
 		if (arrowIsDown[3]) theta += cameraSpeed;
 
 		//player and camera orientation
@@ -607,6 +640,7 @@ public:
 		vec3 cameraPos = playerPos - (cameraForward * zoom);
 		View->lookAt(cameraPos, playerPos, vec3(0, 1, 0));
 	}
+	*/
 
 	void render()
 	{
@@ -630,7 +664,7 @@ public:
 		Projection->perspective(45.0f, aspect, 0.01f, 100.0f);
 		//View for fps camera
 		View->pushMatrix();
-		playerCamMovement(View);
+		player.update(View, wasdIsDown, arrowIsDown);
 
 		//Draw our scene - two meshes - right now to a texture
 		prog->bind();
