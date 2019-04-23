@@ -90,24 +90,25 @@ public:
 			this->velocity = velocity;
 			this->camPhi = 0;
 			this->camTheta = 0;
-			this->camZoom = -10; //TODO make this positive
+			this->camZoom = -10;
 		}
 
 		/* moves the player and camera */
 		//TODO this needs to be done real-time
 		//TODO the View logic can probably be abstracted out
-		vec3 update(std::shared_ptr<MatrixStack> View, bool *arrowIsDown, bool *wasdIsDown) {
+		vec3 update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown) {
 			//TODO after implementing real-time, make these values constants
-			float playerAccel = 0.01f; //player acceleration
-			float maxPlayerSpeed = 0.1f; // maximum player speed TODO this isn't used yet
+			float moveMagn = 0.01f; //player force
+			float mass = 1; // player mass
+
 
 			//TODO implement drifty camera too
 			float cameraSpeed = 0.02f; //camera rotation acceleration
 
 			// camera rotation
-			if (arrowIsDown[0]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); //this is nearly 90 degrees in radians; hitting 90 will flip the camera
+			if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); //no clipping thru the floor
 			if (arrowIsDown[1]) camTheta -= cameraSpeed;
-			if (arrowIsDown[2]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); //no clipping thru the floor
+			if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); //this is nearly 90 degrees in radians; hitting 90 will flip the camera
 			if (arrowIsDown[3]) camTheta += cameraSpeed;
 
 			//player and camera orientation
@@ -120,27 +121,36 @@ public:
 	                            	-cos(camTheta));
 			vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
 
-			// generally, vec3 velocity += (vec3 acceleration * float timePassed)
-			vec3 zAccel = playerForward * playerAccel;
-			vec3 xAccel = playerLeft * playerAccel;
+			//NOTE generally, vec3 velocity += (vec3 acceleration * float timePassed)
+
+			vec3 zAccel = playerForward * moveMagn;
+			vec3 xAccel = playerLeft * moveMagn;
 
 			//player velocity
-			//friction TODO look up actual friction function
-			velocity *= 0.9f;
+
+			vec3 acceleration = vec3(0, 0, 0);
+
+
 			//player controls
-			if (wasdIsDown[0]) velocity -= zAccel;
-	  	if (wasdIsDown[1]) velocity -= xAccel;
-	  	if (wasdIsDown[2]) velocity += zAccel;
-	  	if (wasdIsDown[3]) velocity += xAccel;
+			if (wasdIsDown[0]) acceleration -= zAccel;
+	  	if (wasdIsDown[1]) acceleration -= xAccel;
+	  	if (wasdIsDown[2]) acceleration += zAccel;
+	  	if (wasdIsDown[3]) acceleration += xAccel;
+
+			//acceleration = normalize(acceleration) * moveMagn / mass;
+			//TODO gravity
+			//TODO more accurate friction
+			velocity *= 0.9f; // ""friction""
+			velocity += acceleration;
+
 
 			position += velocity;
 
-			/*QUESTION is this supposed to be moving the collision box? if so, do
-			we need to store it?? */
-			minx = position.x - HEAD_RADIUS;
+			//NOTE this was for updating the collision box
+			/*minx = position.x - HEAD_RADIUS;
 			minz = position.z - HEAD_RADIUS;
 			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;
+			maxz = position.z + HEAD_RADIUS;*/
 
 			// place the camera, pointed at the player
 			//TODO this can be abstracted out if needed
