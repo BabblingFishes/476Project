@@ -38,8 +38,7 @@ using namespace std;
 using namespace glm;
 using namespace std::chrono;
 
-class Application : public EventCallbacks
-{
+class Application : public EventCallbacks {
 public:
 	// Our shader program
 	std::shared_ptr<Program> prog;
@@ -64,33 +63,61 @@ public:
 
 	class GamePlayer {
 	private:
+		shared_ptr<Shape> shape;
+		float radius;
+		vec3 rotation;
 		vec3 position;
 		vec3 direction;
 		vec3 velocity;
 		float camPhi;
 		float camTheta;
 		float camZoom;
-		float minx = position.x - PLAYER_RADIUS;
-		float minz = position.z - PLAYER_RADIUS;
-		float maxx = position.x + PLAYER_RADIUS;
-		float maxz = position.z + PLAYER_RADIUS;
 
 	public:
 		vec3 getPos() { return position; }
 		vec3 getDir() { return direction; }
 		vec3 getVel() { return velocity; }
-		float getMinx() { return minx; }
-		float getMinz() { return minz; }
-		float getMaxx() { return maxx; }
-		float getMaxz() { return maxz; }
 
-		GamePlayer(vec3 position, vec3 direction, vec3 velocity) {
+		GamePlayer(shared_ptr<Shape> shape, vec3 position, vec3 direction, vec3 velocity) {
+			this->shape = shape;
+			this->radius = 1; //TODO assign this according to shape
+			this->rotation = vec3(0, 0, 0);
 			this->position = position;
 			this->direction = direction;
 			this->velocity = velocity;
 			this->camPhi = 0;
 			this->camTheta = 0;
 			this->camZoom = -10;
+		}
+
+		// check collisions with a single point
+		// note that this is a sphere
+		bool isColliding(glm::vec3 point) {
+			bool isCol = length(position - point) < radius;
+
+		  if (isCol) {
+		      cout << "in" << endl; //DEBUG
+		  }
+		  return isCol;
+		}
+
+		void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model){
+			//player model
+			Model->pushMatrix();
+			Model->translate(position);
+			Model->rotate(rotation.x, vec3(1, 0, 0));
+    	Model->rotate(rotation.z, vec3(0, 0, 1));
+			Model->rotate(rotation.y, vec3(0, 1, 0));
+			 // offset for wobble
+			Model->rotate(0.2, vec3(0, 0, 1));
+			Model->translate(vec3(0.3, 0, 0));
+			//material
+			glUniform3f(prog->getUniform("matAMB"), 0.3294, 0.2235, 0.02745);
+			glUniform3f(prog->getUniform("matDIF"), 0.7804, 0.5686, 0.11373);
+			//draw
+			glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+			shape->draw(prog);
+			Model->popMatrix();
 		}
 
 		/* moves the player and camera */
@@ -100,15 +127,18 @@ public:
 			//TODO after implementing real-time, make these values constants
 			float moveMagn = 0.01f; //player force
 			float mass = 1; // player mass
-
+			float friction = 0.98f;
+			float rotSpeed = 0.1f; // rotationSpeed
 
 			//TODO implement drifty camera too
 			float cameraSpeed = 0.02f; //camera rotation acceleration
 
+			rotation += vec3(0, rotSpeed, 0);
+
 			// camera rotation
-			if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); //no clipping thru the floor
+			if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
 			if (arrowIsDown[1]) camTheta -= cameraSpeed;
-			if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); //this is nearly 90 degrees in radians; hitting 90 will flip the camera
+			if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
 			if (arrowIsDown[3]) camTheta += cameraSpeed;
 
 			//player and camera orientation
@@ -116,9 +146,9 @@ public:
 	                            	sin(camPhi),
 	                            	cos(camPhi) * -cos(camTheta));
 			//TODO normalize?
-			vec3 playerForward = vec3(-sin(camTheta),
+			vec3 playerForward = normalize(vec3(-sin(camTheta),
 	                            	0,
-	                            	-cos(camTheta));
+	                            	-cos(camTheta)));
 			vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
 
 			//NOTE generally, vec3 velocity += (vec3 acceleration * float timePassed)
@@ -140,7 +170,7 @@ public:
 			//acceleration = normalize(acceleration) * moveMagn / mass;
 			//TODO gravity
 			//TODO more accurate friction
-			velocity *= 0.9f; // ""friction""
+			velocity *= friction;// ""friction""
 			velocity += acceleration;
 
 
@@ -222,11 +252,11 @@ public:
 		}
 
 		void draw() { shape->draw(prog); }
+
 		void destroy() { toDraw = false; }
 		//TODO: check collisions function(s)
 
-		bool isColliding(vector<GameObject> gameObjs, GamePlayer p)
-		{
+		/*bool isColliding(vector<GameObject> gameObjs, GamePlayer p) {
 			if ((p.getMaxx() > minx && p.getMaxz() > minz) || (p.getMinx() < maxx && p.getMinz() < maxz)){
 				cout << "PLAYER COLLISION\n";
 				return true;
@@ -239,7 +269,7 @@ public:
 				}
 			}
 			return false;
-		}
+		}*/
 	};
 
 	vector<GameObject> generateObjs() {
@@ -299,10 +329,9 @@ public:
 	vec3 playerPos; //player position, TODO replace with the one in player
 
 	const float PI = 3.14159;
-	GamePlayer player = GamePlayer(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
+	GamePlayer *player = nullptr;
 
-	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
-	{
+	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 
 		if (action == GLFW_PRESS || action == GLFW_RELEASE) {
 			// movement
@@ -349,13 +378,11 @@ public:
     }
 	}
 
-	void scrollCallback(GLFWwindow* window, double deltaX, double deltaY)
-	{
+	void scrollCallback(GLFWwindow* window, double deltaX, double deltaY) {
 		cTheta += (float)deltaX;
 	}
 
-	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
-	{
+	void mouseCallback(GLFWwindow *window, int button, int action, int mods) {
 		double posX = 0, posY = 0;
 
 		if (action == GLFW_PRESS)
@@ -372,8 +399,7 @@ public:
 		}
 	}
 
-	void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
-	{
+	void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 		/*
 		if (mouseDown) {
 			deltaX = xpos - mouseXPrev;
@@ -396,13 +422,13 @@ public:
 		*/
 	}
 
-	void resizeCallback(GLFWwindow *window, int width, int height)
-	{
+	void resizeCallback(GLFWwindow *window, int width, int height) {
 		glViewport(0, 0, width, height);
 	}
 
-	void init(const std::string& resourceDirectory)
-	{
+	/*** INITIALIZATIONS ***/
+
+	void init(const std::string& resourceDirectory) {
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		GLSL::checkVersion();
@@ -475,8 +501,7 @@ public:
 		texProg->addUniform("randNum");
 	}
 
-	void initGeom(const std::string& resourceDirectory)
-	{
+	void initGeom(const std::string& resourceDirectory) {
 		// Initialize the obj mesh VBOs etc
 		shape = make_shared<Shape>();
 		shape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
@@ -493,6 +518,8 @@ public:
 		playerShape->loadMesh(resourceDirectory + "/cylinder_shell.obj");
 		playerShape->resize();
 		playerShape->init();
+
+		player = new GamePlayer(playerShape, vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
 
 		//Initialize the geometry to render a quad to the screen
 		initQuad();
@@ -584,6 +611,8 @@ public:
 			GameObject cur = gameObjs[i];
 			vec3 rot = cur.getRot();
 			//cur.isColliding(gameObjs, player);
+			player->isColliding(cur.getPos());
+
 			Model->pushMatrix();
 			//cout << i << "\n";
 			//cout << "prev pos" << glm::to_string(cur.getPos());
@@ -607,12 +636,14 @@ public:
 		Model->popMatrix();
 
 		//player model
+		player->draw(prog, Model);
+		/*
 		Model->pushMatrix();
 		Model->translate(player.getPos());
 		SetMaterial(2);
 		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
 		playerShape->draw(prog);
-		Model->popMatrix();
+		Model->popMatrix();*/
 	}
 
 	//NOTE: this is now in the player class
@@ -674,7 +705,7 @@ public:
 		Projection->perspective(45.0f, aspect, 0.01f, 100.0f);
 		//View for fps camera
 		View->pushMatrix();
-		player.update(View, wasdIsDown, arrowIsDown);
+		player->update(View, wasdIsDown, arrowIsDown);
 
 		//Draw our scene - two meshes - right now to a texture
 		prog->bind();
