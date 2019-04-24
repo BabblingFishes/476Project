@@ -51,7 +51,7 @@ public:
 	high_resolution_clock::time_point t2;
 
 	// Shape to be used (from obj file)
-	shared_ptr<Shape> shape;
+	shared_ptr<Shape> cowShape;
 	shared_ptr<Shape> shape2;
 	shared_ptr<Shape> playerShape;
 
@@ -93,12 +93,7 @@ public:
 		// check collisions with a single point
 		// note that this is a sphere
 		bool isColliding(glm::vec3 point) {
-			bool isCol = length(position - point) < radius;
-
-		  if (isCol) {
-		      cout << "in" << endl; //DEBUG
-		  }
-		  return isCol;
+			return length(position - point) < radius;
 		}
 
 		void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model){
@@ -198,7 +193,7 @@ public:
 		vec3 rotation;
 		float velocity;
 		shared_ptr<Shape> shape;
-		bool toDraw = false;
+		bool toDraw;
 		bool collected = false;
 		shared_ptr<Program> prog;
 		// bounding box
@@ -228,8 +223,8 @@ public:
 			this->shape = shape;
 			this->prog = prog;
 
-			toDraw = false;
-			rotation = vec3(asin(direction.x), 0.f, acos(direction.z));
+			toDraw = true;
+			rotation = vec3(0, 0, 0);
 			minx = position.x - HEAD_RADIUS;
 			minz = position.z - HEAD_RADIUS;
 			maxx = position.x + HEAD_RADIUS;
@@ -251,9 +246,22 @@ public:
 			return newPos;
 		}
 
-		void draw() { shape->draw(prog); }
+		void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model) {
+			if (toDraw) {
+				Model->pushMatrix();
+					Model->translate(position);
+					Model->rotate(radians(-90.f), vec3(1, 0, 0));
+					glUniform3f(prog->getUniform("matAMB"), 0.02, 0.04, 0.2);
+					glUniform3f(prog->getUniform("matDIF"), 0.0, 0.16, 0.9);
+					glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+					shape->draw(prog);
+				Model->popMatrix();
+			}
+		}
 
-		void destroy() { toDraw = false; }
+		void destroy() {
+			toDraw = false;
+		}
 		//TODO: check collisions function(s)
 
 		/*bool isColliding(vector<GameObject> gameObjs, GamePlayer p) {
@@ -272,7 +280,7 @@ public:
 		}*/
 	};
 
-	vector<GameObject> generateObjs() {
+	vector<GameObject> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GameObject> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
 			randXPos = (((float)rand() / (RAND_MAX)) * 40) - 20;
@@ -286,7 +294,7 @@ public:
 		return gameObjs;
 	}
 
-	vector<GameObject> gameObjs = generateObjs();
+	vector<GameObject> gameObjs;
 
 	WindowManager * windowManager = nullptr;
 
@@ -503,10 +511,10 @@ public:
 
 	void initGeom(const std::string& resourceDirectory) {
 		// Initialize the obj mesh VBOs etc
-		shape = make_shared<Shape>();
-		shape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
-		shape->resize();
-		shape->init();
+		cowShape = make_shared<Shape>();
+		cowShape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
+		cowShape->resize();
+		cowShape->init();
 
 		//initialize
 		shape2 = make_shared<Shape>();
@@ -520,7 +528,7 @@ public:
 		playerShape->init();
 
 		player = new GamePlayer(playerShape, vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
-
+		gameObjs = generateObjs(cowShape);
 		//Initialize the geometry to render a quad to the screen
 		initQuad();
 	}
@@ -611,20 +619,11 @@ public:
 			GameObject cur = gameObjs[i];
 			vec3 rot = cur.getRot();
 			//cur.isColliding(gameObjs, player);
-			player->isColliding(cur.getPos());
+			if (player->isColliding(cur.getPos())) {
+				cur.destroy();
+			}
 
-			Model->pushMatrix();
-			//cout << i << "\n";
-			//cout << "prev pos" << glm::to_string(cur.getPos());
-			vec3 newPos = gameObjs[i].update(dt);
-			Model->translate(newPos);
-			//cout << "translated pos " << glm::to_string(newPos) << endl;
-			Model->rotate((rot.z + rot.x) / 2.f, vec3(0, 1, 0));
-			Model->rotate(radians(-90.f), vec3(1, 0, 0));
-			SetMaterial(i % 4);
-			glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-			shape->draw(prog);
-			Model->popMatrix();
+			cur.draw(prog, Model);
 		}
 
 		Model->pushMatrix();
@@ -637,51 +636,7 @@ public:
 
 		//player model
 		player->draw(prog, Model);
-		/*
-		Model->pushMatrix();
-		Model->translate(player.getPos());
-		SetMaterial(2);
-		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-		playerShape->draw(prog);
-		Model->popMatrix();*/
 	}
-
-	//NOTE: this is now in the player class
-	// handles player & camera movement
-	//TODO this needs to be done real-time
-	//TODO this needs acceleration for drift
-	/*void playerCamMovement(std::shared_ptr<MatrixStack> View)
-	{
-		//TODO after implementing real-time, make these values global constants
-		float playerSpeed = 0.1f; //player speed
-		float cameraSpeed = 0.02f; //camera rotation speed
-
-		// camera rotation
-		if (arrowIsDown[0]) phi = std::min(phi + cameraSpeed, 1.56f); //this is nearly 90 degrees in radians; hitting 90 will flip the camera
-		if (arrowIsDown[1]) theta -= cameraSpeed;
-		if (arrowIsDown[2]) phi = std::max(phi - cameraSpeed, 0.0f); //no clipping thru the floor
-		if (arrowIsDown[3]) theta += cameraSpeed;
-
-		//player and camera orientation
-		vec3 cameraForward = vec3(cos(phi) * -sin(theta),
-                            	sin(phi),
-                            	cos(phi) * -cos(theta));
-		vec3 playerForward = vec3(-sin(theta),
-                            	0,
-                            	-cos(theta));
-		vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
-
-		// player movement
-		if (wasdIsDown[0]) playerPos -= playerForward * playerSpeed;
-  	if (wasdIsDown[1]) playerPos -= playerLeft * playerSpeed;
-  	if (wasdIsDown[2]) playerPos += playerForward * playerSpeed;
-  	if (wasdIsDown[3]) playerPos += playerLeft * playerSpeed;
-
-		// place the camera, pointed at the player
-		vec3 cameraPos = playerPos - (cameraForward * zoom);
-		View->lookAt(cameraPos, playerPos, vec3(0, 1, 0));
-	}
-	*/
 
 	void render()
 	{
