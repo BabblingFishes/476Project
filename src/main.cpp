@@ -22,6 +22,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "Shape.h"
 #include "WindowManager.h"
 #include "GLTextureWriter.h"
+#include "GameObject.h"
 
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
@@ -186,99 +187,6 @@ public:
 		}
 	};
 
-	class GameObject {
-	private:
-		vec3 position;
-		vec3 direction;
-		vec3 rotation;
-		float velocity;
-		shared_ptr<Shape> shape;
-		bool toDraw;
-		bool collected = false;
-		shared_ptr<Program> prog;
-		// bounding box
-		float minx = position.x - PLAYER_RADIUS;
-		float minz = position.z - PLAYER_RADIUS;
-		float maxx = position.x + PLAYER_RADIUS;
-		float maxz = position.z + PLAYER_RADIUS;
-
-	public:
-		vec3 getPos() { return position; }
-		vec3 getDir() { return direction; }
-		vec3 getRot() { return rotation; }
-		float getVel() { return velocity; }
-		bool getDraw() { return toDraw; }
-		bool getCollected() { return collected; }
-		float getMinx() { return minx; }
-		float getMinz() { return minz; }
-		float getMaxx() { return maxx; }
-		float getMaxz() { return maxz; }
-
-		void setPos(vec3 pos) { position = pos; }
-
-		GameObject(vec3 position, vec3 direction, float velocity, shared_ptr<Shape> shape, shared_ptr<Program> prog) {
-			this->position = position;
-			this->direction = direction;
-			this->velocity = velocity;
-			this->shape = shape;
-			this->prog = prog;
-
-			toDraw = true;
-			rotation = vec3(0, 0, 0);
-			minx = position.x - HEAD_RADIUS;
-			minz = position.z - HEAD_RADIUS;
-			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;
-		}
-
-		//timer for spawning
-		clock_t timer = clock();
-
-		vec3 update(double dt) {
-			vec3 move = direction * velocity * (float)dt;
-			vec3 newPos = position + move;
-			position = newPos;
-			minx = position.x - HEAD_RADIUS;
-			minz = position.z - HEAD_RADIUS;
-			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;
-
-			return newPos;
-		}
-
-		void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model) {
-			if (toDraw) {
-				Model->pushMatrix();
-					Model->translate(position);
-					Model->rotate(radians(-90.f), vec3(1, 0, 0));
-					glUniform3f(prog->getUniform("matAMB"), 0.02, 0.04, 0.2);
-					glUniform3f(prog->getUniform("matDIF"), 0.0, 0.16, 0.9);
-					glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-					shape->draw(prog);
-				Model->popMatrix();
-			}
-		}
-
-		void destroy() {
-			toDraw = false;
-		}
-		//TODO: check collisions function(s)
-
-		/*bool isColliding(vector<GameObject> gameObjs, GamePlayer p) {
-			if ((p.getMaxx() > minx && p.getMaxz() > minz) || (p.getMinx() < maxx && p.getMinz() < maxz)){
-				cout << "PLAYER COLLISION\n";
-				return true;
-			}
-			for (uint i = 0; i < gameObjs.size(); i++) {
-				GameObject cur = gameObjs[i];
-				if ((cur.maxx < minx && cur.maxz < minz) || (cur.minx < maxx && cur.minz < maxz)) {
-					cout << "Collision! between objects!";
-					return true;
-				}
-			}
-			return false;
-		}*/
-	};
 
 	vector<GameObject> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GameObject> gameObjs;
