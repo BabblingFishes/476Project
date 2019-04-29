@@ -22,6 +22,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "Shape.h"
 #include "WindowManager.h"
 #include "GLTextureWriter.h"
+#include "GameObject.h"
 
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
@@ -38,8 +39,7 @@ using namespace std;
 using namespace glm;
 using namespace std::chrono;
 
-class Application : public EventCallbacks
-{
+class Application : public EventCallbacks {
 public:
 	// Our shader program
 	std::shared_ptr<Program> prog;
@@ -52,7 +52,7 @@ public:
 	high_resolution_clock::time_point t2;
 
 	// Shape to be used (from obj file)
-	shared_ptr<Shape> shape;
+	shared_ptr<Shape> cowShape;
 	shared_ptr<Shape> shape2;
 	shared_ptr<Shape> playerShape;
 
@@ -64,142 +64,131 @@ public:
 
 	class GamePlayer {
 	private:
-		vec3 position;
-		vec3 direction;
-		float velocity;
-		float minx = position.x - PLAYER_RADIUS;
-		float minz = position.z - PLAYER_RADIUS;
-		float maxx = position.x + PLAYER_RADIUS;
-		float maxz = position.z + PLAYER_RADIUS;
-
-	public:
-		vec3 getPos() { return position; }
-		vec3 getDir() { return direction; }
-		float getVel() { return velocity; }
-		float getMinx() { return minx; }
-		float getMinz() { return minz; }
-		float getMaxx() { return maxx; }
-		float getMaxz() { return maxz; }
-
-		GamePlayer(vec3 position, vec3 direction, float velocity) {
-			this->position = position;
-			this->direction = direction;
-			this->velocity = velocity;
-		}
-
-		vec3 update(int key, float theta) {
-			switch (key) {
-			case(1):
-				position.x -= (float)cos(theta) * velocity;
-				position.z -= (float)sin(theta) * velocity;
-				break;
-			case(2):
-				position.x += (float)cos(theta) * velocity;
-				position.z += (float)sin(theta) * velocity;
-				break;
-			case(3):
-				position.z -= (float)cos(theta) * velocity;
-				position.x += (float)sin(theta) * velocity;
-				break;
-			case(4):
-				position.z += (float)cos(theta) * velocity;
-				position.x -= (float)sin(theta) * velocity;
-				break;
-			}
-			minx = position.x - HEAD_RADIUS;
-			minz = position.z - HEAD_RADIUS;
-			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;
-
-			//cout << "pminx: " << minx << " pminz: " << minz << "pmaxx: " << maxx << "pmaxz: " << maxz << endl;
-
-			vec3 newPos = position;
-			return newPos;
-		}
-	};
-
-	class GameObject {
-	private:
-		vec3 position;
-		vec3 direction;
-		vec3 rotation;
-		float velocity;
 		shared_ptr<Shape> shape;
-		bool toDraw = false;
-		bool collected = false;
-		shared_ptr<Program> prog;
-		// bounding box
-		float minx = position.x - PLAYER_RADIUS;
-		float minz = position.z - PLAYER_RADIUS;
-		float maxx = position.x + PLAYER_RADIUS;
-		float maxz = position.z + PLAYER_RADIUS;
+		float radius;
+		vec3 rotation;
+		vec3 position;
+		vec3 direction;
+		vec3 velocity;
+		float camPhi;
+		float camTheta;
+		float camZoom;
 
 	public:
 		vec3 getPos() { return position; }
 		vec3 getDir() { return direction; }
-		vec3 getRot() { return rotation; }
-		float getVel() { return velocity; }
-		bool getDraw() { return toDraw; }
-		bool getCollected() { return collected; }
-		float getMinx() { return minx; }
-		float getMinz() { return minz; }
-		float getMaxx() { return maxx; }
-		float getMaxz() { return maxz; }
+		vec3 getVel() { return velocity; }
 
-		void setPos(vec3 pos) { position = pos; }
-
-		GameObject(vec3 position, vec3 direction, float velocity, shared_ptr<Shape> shape, shared_ptr<Program> prog) {
+		GamePlayer(shared_ptr<Shape> shape, vec3 position, vec3 direction, vec3 velocity) {
+			this->shape = shape;
+			this->radius = 1; //TODO assign this according to shape
+			this->rotation = vec3(0, 0, 0);
 			this->position = position;
 			this->direction = direction;
 			this->velocity = velocity;
-			this->shape = shape;
-			this->prog = prog;
-
-			toDraw = false;
-			rotation = vec3(asin(direction.x), 0.f, acos(direction.z));
-			minx = position.x - HEAD_RADIUS;
-			minz = position.z - HEAD_RADIUS;
-			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;
+			this->camPhi = 0;
+			this->camTheta = 0;
+			this->camZoom = -10;
 		}
 
-		//timer for spawning
-		clock_t timer = clock();
-
-		vec3 update(double dt) {
-			vec3 move = direction * velocity * (float)dt;
-			vec3 newPos = position + move;
-			position = newPos;
-			minx = position.x - HEAD_RADIUS;
-			minz = position.z - HEAD_RADIUS;
-			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;
-
-			return newPos;
+		// check collisions with a single point
+		// note that this is a sphere
+		bool isColliding(glm::vec3 point) {
+			return length(position - point) < radius;
 		}
 
-		void draw() { shape->draw(prog); }
-		void destroy() { toDraw = false; }
-		//TODO: check collisions function(s)
+		void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model){
+			//player model
+			Model->pushMatrix();
+			Model->translate(position);
+			Model->rotate(rotation.x, vec3(1, 0, 0));
+    	Model->rotate(rotation.z, vec3(0, 0, 1));
+			Model->rotate(rotation.y, vec3(0, 1, 0));
+			 // offset for wobble
+			Model->rotate(0.2, vec3(0, 0, 1));
+			Model->translate(vec3(0.3, 0, 0));
+			//material
+			glUniform3f(prog->getUniform("matAMB"), 0.3294, 0.2235, 0.02745);
+			glUniform3f(prog->getUniform("matDIF"), 0.7804, 0.5686, 0.11373);
+			//draw
+			glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+			shape->draw(prog);
+			Model->popMatrix();
+		}
 
-		bool isColliding(vector<GameObject> gameObjs, GamePlayer p)
-		{
-			if ((p.getMaxx() > minx && p.getMaxz() > minz) || (p.getMinx() < maxx && p.getMinz() < maxz)){
-				cout << "PLAYER COLLISION\n";
-				return true;
-			}
-			for (uint i = 0; i < gameObjs.size(); i++) {
-				GameObject cur = gameObjs[i];
-				if ((cur.maxx < minx && cur.maxz < minz) || (cur.minx < maxx && cur.minz < maxz)) {
-					cout << "Collision! between objects!";
-					return true;
-				}
-			}
-			return false;
+		/* moves the player and camera */
+		//TODO this needs to be done real-time
+		//TODO the View logic can probably be abstracted out
+		vec3 update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown) {
+			//TODO after implementing real-time, make these values constants
+			float moveMagn = 0.01f; //player force
+			float mass = 1; // player mass
+			float friction = 0.98f;
+			float rotSpeed = 0.1f; // rotationSpeed
+
+			//TODO implement drifty camera too
+			float cameraSpeed = 0.02f; //camera rotation acceleration
+
+			rotation += vec3(0, rotSpeed, 0);
+
+			// camera rotation
+			if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+			if (arrowIsDown[1]) camTheta -= cameraSpeed;
+			if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+			if (arrowIsDown[3]) camTheta += cameraSpeed;
+
+			//player and camera orientation
+			vec3 cameraForward = vec3(cos(camPhi) * -sin(camTheta),
+	                            	sin(camPhi),
+	                            	cos(camPhi) * -cos(camTheta));
+			//TODO normalize?
+			vec3 playerForward = normalize(vec3(-sin(camTheta),
+	                            	0,
+	                            	-cos(camTheta)));
+			vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
+
+			//NOTE generally, vec3 velocity += (vec3 acceleration * float timePassed)
+
+			vec3 zAccel = playerForward * moveMagn;
+			vec3 xAccel = playerLeft * moveMagn;
+
+			//player velocity
+
+			vec3 acceleration = vec3(0, 0, 0);
+
+
+			//player controls
+			if (wasdIsDown[0]) acceleration -= zAccel;
+	  	if (wasdIsDown[1]) acceleration -= xAccel;
+	  	if (wasdIsDown[2]) acceleration += zAccel;
+	  	if (wasdIsDown[3]) acceleration += xAccel;
+
+			//acceleration = normalize(acceleration) * moveMagn / mass;
+			//TODO gravity
+			//TODO more accurate friction
+			velocity *= friction;// ""friction""
+			velocity += acceleration;
+
+
+			position += velocity;
+
+			//NOTE this was for updating the collision box
+			/*minx = position.x - HEAD_RADIUS;
+			minz = position.z - HEAD_RADIUS;
+			maxx = position.x + HEAD_RADIUS;
+			maxz = position.z + HEAD_RADIUS;*/
+
+			// place the camera, pointed at the player
+			//TODO this can be abstracted out if needed
+			vec3 cameraPos = position - (cameraForward * camZoom);
+			View->lookAt(cameraPos, position, vec3(0, 1, 0));
+
+			return position;
 		}
 	};
 
-	vector<GameObject> generateObjs() {
+
+	vector<GameObject> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GameObject> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
 			randXPos = (((float)rand() / (RAND_MAX)) * 40) - 20;
@@ -213,7 +202,7 @@ public:
 		return gameObjs;
 	}
 
-	vector<GameObject> gameObjs = generateObjs();
+	vector<GameObject> gameObjs;
 
 	WindowManager * windowManager = nullptr;
 
@@ -256,10 +245,9 @@ public:
 	vec3 playerPos; //player position, TODO replace with the one in player
 
 	const float PI = 3.14159;
-	GamePlayer player = GamePlayer(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), PLAYER_VELOCITY);
+	GamePlayer *player = nullptr;
 
-	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
-	{
+	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 
 		if (action == GLFW_PRESS || action == GLFW_RELEASE) {
 			// movement
@@ -306,13 +294,11 @@ public:
     }
 	}
 
-	void scrollCallback(GLFWwindow* window, double deltaX, double deltaY)
-	{
+	void scrollCallback(GLFWwindow* window, double deltaX, double deltaY) {
 		cTheta += (float)deltaX;
 	}
 
-	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
-	{
+	void mouseCallback(GLFWwindow *window, int button, int action, int mods) {
 		double posX = 0, posY = 0;
 
 		if (action == GLFW_PRESS)
@@ -329,8 +315,7 @@ public:
 		}
 	}
 
-	void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
-	{
+	void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 		/*
 		if (mouseDown) {
 			deltaX = xpos - mouseXPrev;
@@ -353,13 +338,13 @@ public:
 		*/
 	}
 
-	void resizeCallback(GLFWwindow *window, int width, int height)
-	{
+	void resizeCallback(GLFWwindow *window, int width, int height) {
 		glViewport(0, 0, width, height);
 	}
 
-	void init(const std::string& resourceDirectory)
-	{
+	/*** INITIALIZATIONS ***/
+
+	void init(const std::string& resourceDirectory) {
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		GLSL::checkVersion();
@@ -432,13 +417,12 @@ public:
 		texProg->addUniform("randNum");
 	}
 
-	void initGeom(const std::string& resourceDirectory)
-	{
+	void initGeom(const std::string& resourceDirectory) {
 		// Initialize the obj mesh VBOs etc
-		shape = make_shared<Shape>();
-		shape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
-		shape->resize();
-		shape->init();
+		cowShape = make_shared<Shape>();
+		cowShape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
+		cowShape->resize();
+		cowShape->init();
 
 		//initialize
 		shape2 = make_shared<Shape>();
@@ -451,6 +435,8 @@ public:
 		playerShape->resize();
 		playerShape->init();
 
+		player = new GamePlayer(playerShape, vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
+		gameObjs = generateObjs(cowShape);
 		//Initialize the geometry to render a quad to the screen
 		initQuad();
 	}
@@ -541,18 +527,11 @@ public:
 			GameObject cur = gameObjs[i];
 			vec3 rot = cur.getRot();
 			//cur.isColliding(gameObjs, player);
-			Model->pushMatrix();
-			//cout << i << "\n";
-			//cout << "prev pos" << glm::to_string(cur.getPos());
-			vec3 newPos = gameObjs[i].update(dt);
-			Model->translate(newPos);
-			//cout << "translated pos " << glm::to_string(newPos) << endl;
-			Model->rotate((rot.z + rot.x) / 2.f, vec3(0, 1, 0));
-			Model->rotate(radians(-90.f), vec3(1, 0, 0));
-			SetMaterial(i % 4);
-			glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-			shape->draw(prog);
-			Model->popMatrix();
+			if (player->isColliding(cur.getPos())) {
+				cur.destroy();
+			}
+
+			cur.draw(prog, Model);
 		}
 
 		Model->pushMatrix();
@@ -564,48 +543,7 @@ public:
 		Model->popMatrix();
 
 		//player model
-		Model->pushMatrix();
-		Model->translate(playerPos);
-		SetMaterial(2);
-		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-		playerShape->draw(prog);
-		Model->popMatrix();
-	}
-
-	// handles player & camera movement
-	//TODO this needs to be done real-time
-	//TODO this needs acceleration for drift
-	void playerCamMovement(std::shared_ptr<MatrixStack> View)
-	{
-		//TODO after implementing real-time, make these two values global constants
-		float playerSpeed = 0.1f; //player speed
-		float cameraSpeed = 0.02f; //camera rotation speed
-		float almostUp = 1.56f; //this is nearly 90 degrees (90 flips the camera)
-
-		// camera rotation
-		if (arrowIsDown[0]) phi = std::min(phi + cameraSpeed, almostUp);
-		if (arrowIsDown[1]) theta -= cameraSpeed;
-		if (arrowIsDown[2]) phi = std::max(phi - cameraSpeed, 0.0f);
-		if (arrowIsDown[3]) theta += cameraSpeed;
-
-		//player and camera orientation
-		vec3 cameraForward = vec3(cos(phi) * -sin(theta),
-                            	sin(phi),
-                            	cos(phi) * -cos(theta));
-		vec3 playerForward = vec3(-sin(theta),
-                            	0,
-                            	-cos(theta));
-		vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
-
-		// player movement
-		if (wasdIsDown[0]) playerPos -= playerForward * playerSpeed;
-  	if (wasdIsDown[1]) playerPos -= playerLeft * playerSpeed;
-  	if (wasdIsDown[2]) playerPos += playerForward * playerSpeed;
-  	if (wasdIsDown[3]) playerPos += playerLeft * playerSpeed;
-
-		// place the camera, pointed at the player
-		vec3 cameraPos = playerPos - (cameraForward * zoom);
-		View->lookAt(cameraPos, playerPos, vec3(0, 1, 0));
+		player->draw(prog, Model);
 	}
 
 	void render()
@@ -630,7 +568,7 @@ public:
 		Projection->perspective(45.0f, aspect, 0.01f, 100.0f);
 		//View for fps camera
 		View->pushMatrix();
-		playerCamMovement(View);
+		player->update(View, wasdIsDown, arrowIsDown);
 
 		//Draw our scene - two meshes - right now to a texture
 		prog->bind();
