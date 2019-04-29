@@ -1,5 +1,17 @@
 # compiled files #
 build/*
+CMakeFiles/*
+*.cmake
+
+# visual studio trash #
+.vs/*
+Debug/*
+HolyCow.dir/*
+Win32/*
+*.vcxproj
+*.filters
+*.sln
+*.user
 
 # apple trash #
 .DS_Store
