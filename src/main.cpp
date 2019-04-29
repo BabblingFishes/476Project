@@ -15,11 +15,15 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <ctime>
 #include <ratio>
 
+//#include "math.h"
+//#define GLM_ENABLE_EXPERIMENTAL
+#include "stb_image.h"
 
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
+#include "SkyBox.h"
 #include "WindowManager.h"
 #include "GLTextureWriter.h"
 #include "GameObject.h"
@@ -34,6 +38,8 @@ Winter 2017 - ZJW (Piddington texture write)
 #define PLAYER_VELOCITY .2
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
+#define WORLD_WIDTH 20
+#define WORLD_LENGTH 40
 
 using namespace std;
 using namespace glm;
@@ -44,6 +50,7 @@ public:
 	// Our shader program
 	std::shared_ptr<Program> prog;
 	std::shared_ptr<Program> texProg;
+	std::shared_ptr<Program> skyProg;
 
 	//timers for time based movement
 	time_t startTime;
@@ -53,8 +60,9 @@ public:
 
 	// Shape to be used (from obj file)
 	shared_ptr<Shape> cowShape;
-	shared_ptr<Shape> shape2;
 	shared_ptr<Shape> playerShape;
+	shared_ptr<Shape> cube;
+	shared_ptr<SkyBox> skybox;
 
 	//random num generators for position and direction generation
 	int randXPos; //= rand() % 20;
@@ -191,8 +199,8 @@ public:
 	vector<GameObject> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GameObject> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
-			randXPos = (((float)rand() / (RAND_MAX)) * 40) - 20;
-			randZPos = (((float)rand() / (RAND_MAX)) * 40) - 20;
+			randXPos = (((float)rand() / (RAND_MAX)) * 40) - WORLD_WIDTH;
+			randZPos = (((float)rand() / (RAND_MAX)) * 40) - WORLD_LENGTH;
 			randXDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
 			randZDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
 			GameObject obj = GameObject(vec3(randXPos, 0.f, randZPos), vec3(randXDir, 0.f, randZDir), START_VELOCITY, shape, prog);
@@ -215,6 +223,8 @@ public:
 	//geometry for texture render
 	GLuint quad_VertexArrayID;
 	GLuint quad_vertexbuffer;
+
+	unsigned int cubeMapTexture;
 
 	//reference to texture FBO
 	GLuint frameBuf[2];
@@ -342,6 +352,47 @@ public:
 		glViewport(0, 0, width, height);
 	}
 
+unsigned int createSky(string dir, vector<string> faces) {
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	stbi_set_flip_vertically_on_load(false);
+	for(GLuint i = 0; i < faces.size(); i++) {
+		 unsigned char *data =
+		 stbi_load((dir+faces[i]).c_str(), &width, &height, &nrChannels, 0);
+		 if (data) {
+				 glTexImage2D(
+						 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+						 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		 } else {
+				 std::cout << "failed to load: " << (dir+faces[i]).c_str() << std::endl;
+		 }
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}
+
+// Code to load in the three textures
+void initTex(const std::string& resourceDirectory)
+{
+	 vector<std::string> faces {
+			 "rt.tga",
+			 "lf.tga",
+			 "up.tga",
+			 "sist_dn.tga",
+			 "bk.tga",
+			 "ft.tga"
+	 };
+	 cubeMapTexture = createSky(resourceDirectory + "/",  faces);
+}
+
 	/*** INITIALIZATIONS ***/
 
 	void init(const std::string& resourceDirectory) {
@@ -395,6 +446,9 @@ public:
 		createFBO(frameBuf[1], texBuf[1]);
 		//this one doesn't need depth
 
+		//initialize textures
+		initTex(resourceDirectory);
+
 		//set up the shaders to blur the FBO just a placeholder pass thru now
 		//next lab modify and possibly add other shaders to complete blur
 		texProg = make_shared<Program>();
@@ -415,20 +469,41 @@ public:
 		texProg->addUniform("V");
 		texProg->addUniform("M");
 		texProg->addUniform("randNum");
+
+		// SkyBox
+		skyProg = make_shared<Program>();
+    skyProg->setVerbose(true);
+    skyProg->setShaderNames(
+        resourceDirectory + "/skybox_vert.glsl",
+        resourceDirectory + "/skybox_frag.glsl");
+    if (! skyProg->init()) {
+        std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+        exit(1);
+    }
+    skyProg->addUniform("P");
+    skyProg->addUniform("M");
+    skyProg->addUniform("V");
+    skyProg->addAttribute("vertPos");
 	}
 
 	void initGeom(const std::string& resourceDirectory) {
+
 		// Initialize the obj mesh VBOs etc
 		cowShape = make_shared<Shape>();
 		cowShape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
 		cowShape->resize();
 		cowShape->init();
 
-		//initialize
-		shape2 = make_shared<Shape>();
-		shape2->loadMesh(resourceDirectory + "/cube.obj");
-		shape2->resize();
-		shape2->init();
+		//initialize skybox
+		cube = make_shared<Shape>();
+		cube->loadMesh(resourceDirectory + "/cube.obj");
+		cube->resize();
+		cube->init();
+
+		skybox = make_shared<SkyBox>();
+		skybox->loadMesh(resourceDirectory + "/cube.obj");
+		skybox->resize();
+		skybox->init();
 
 		playerShape = make_shared<Shape>();
 		playerShape->loadMesh(resourceDirectory + "/cylinder_shell.obj");
@@ -534,12 +609,13 @@ public:
 			cur.draw(prog, Model);
 		}
 
+		//ground
 		Model->pushMatrix();
 		Model->translate(vec3(0, -1, 0));
-		Model->scale(vec3(20, 0, 20));
+		Model->scale(vec3(WORLD_WIDTH, 0, WORLD_LENGTH));
 		SetMaterial(4);
 		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-		shape2->draw(prog);
+		cube->draw(prog);
 		Model->popMatrix();
 
 		//player model
@@ -565,7 +641,7 @@ public:
 		auto Model = make_shared<MatrixStack>();
 		// Apply perspective projection.
 		Projection->pushMatrix();
-		Projection->perspective(45.0f, aspect, 0.01f, 100.0f);
+		Projection->perspective(45.0f, aspect, 0.01f, 500.0f); //orig: 100.0f, changed to 1000.0f
 		//View for fps camera
 		View->pushMatrix();
 		player->update(View, wasdIsDown, arrowIsDown);
@@ -591,6 +667,24 @@ public:
 		//time(&endTime);
 		t2 = high_resolution_clock::now();
 		prog->unbind();
+
+		//draw the sky box
+		skyProg->bind();
+		glUniformMatrix4fv(skyProg->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
+		glUniformMatrix4fv(skyProg->getUniform("V"), 1, GL_FALSE,value_ptr(View->topMatrix()));
+		mat4 ident(1.0);
+		glDepthFunc(GL_LEQUAL);
+		Model->pushMatrix();
+				Model->loadIdentity();
+				Model->rotate(radians(cTheta), vec3(0, 1, 0));
+				Model->translate(vec3(0, 6.0, 0));
+				Model->scale(200.0);
+				glUniformMatrix4fv(skyProg->getUniform("M"), 1, GL_FALSE,value_ptr(Model->topMatrix()) );
+				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+				skybox->draw(texProg);
+		glDepthFunc(GL_LESS);
+		Model->popMatrix();
+		skyProg->unbind();
 
 		texProg->bind();
 		glActiveTexture(GL_TEXTURE0);
