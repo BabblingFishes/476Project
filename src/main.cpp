@@ -38,8 +38,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #define PLAYER_VELOCITY .2
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
-#define WORLD_WIDTH 20
-#define WORLD_LENGTH 40
+#define WORLD_SIZE 100
 
 using namespace std;
 using namespace glm;
@@ -199,8 +198,8 @@ public:
 	vector<GameObject> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GameObject> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
-			randXPos = (((float)rand() / (RAND_MAX)) * 40) - WORLD_WIDTH;
-			randZPos = (((float)rand() / (RAND_MAX)) * 40) - WORLD_LENGTH;
+			randXPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
+			randZPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
 			randXDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
 			randZDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
 			GameObject obj = GameObject(vec3(randXPos, 0.f, randZPos), vec3(randXDir, 0.f, randZDir), START_VELOCITY, shape, prog);
@@ -612,7 +611,7 @@ void initTex(const std::string& resourceDirectory)
 		//ground
 		Model->pushMatrix();
 		Model->translate(vec3(0, -1, 0));
-		Model->scale(vec3(WORLD_WIDTH, 0, WORLD_LENGTH));
+		Model->scale(vec3(WORLD_SIZE, 0, WORLD_SIZE));
 		SetMaterial(4);
 		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
 		cube->draw(prog);
@@ -641,7 +640,7 @@ void initTex(const std::string& resourceDirectory)
 		auto Model = make_shared<MatrixStack>();
 		// Apply perspective projection.
 		Projection->pushMatrix();
-		Projection->perspective(45.0f, aspect, 0.01f, 500.0f); //orig: 100.0f, changed to 1000.0f
+		Projection->perspective(45.0f, aspect, 0.01f, WORLD_SIZE * 5);
 		//View for fps camera
 		View->pushMatrix();
 		player->update(View, wasdIsDown, arrowIsDown);
@@ -678,7 +677,7 @@ void initTex(const std::string& resourceDirectory)
 				Model->loadIdentity();
 				Model->rotate(radians(cTheta), vec3(0, 1, 0));
 				Model->translate(vec3(0, 6.0, 0));
-				Model->scale(200.0);
+				Model->scale(WORLD_SIZE*2);
 				glUniformMatrix4fv(skyProg->getUniform("M"), 1, GL_FALSE,value_ptr(Model->topMatrix()) );
 				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
 				skybox->draw(texProg);
