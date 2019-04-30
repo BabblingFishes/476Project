@@ -115,8 +115,8 @@ public:
 			Model->rotate(0.2, vec3(0, 0, 1));
 			Model->translate(vec3(0.3, 0, 0));
 			//material
-			glUniform3f(prog->getUniform("matAMB"), 0.3294, 0.2235, 0.02745);
-			glUniform3f(prog->getUniform("matDIF"), 0.7804, 0.5686, 0.11373);
+			glUniform3f(prog->getUniform("matAmb"), 0.3294, 0.2235, 0.02745);
+			glUniform3f(prog->getUniform("matDif"), 0.7804, 0.5686, 0.11373);
 			//draw
 			glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
 			shape->draw(prog);
@@ -129,7 +129,7 @@ public:
 		vec3 update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown) {
 			//TODO after implementing real-time, make these values constants
 			float moveMagn = 0.01f; //player force
-			float mass = 1; // player mass
+			//float mass = 1; // player mass
 			float friction = 0.98f;
 			float rotSpeed = 0.1f; // rotationSpeed
 
@@ -409,8 +409,8 @@ void initTex(const std::string& resourceDirectory)
 		prog = make_shared<Program>();
 		prog->setVerbose(true);
 		prog->setShaderNames(
-			resourceDirectory + "/simple_vert.glsl",
-			resourceDirectory + "/simple_frag.glsl");
+			resourceDirectory + "/point_vert.glsl",
+			resourceDirectory + "/point_frag.glsl");
 		if (!prog->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
@@ -419,10 +419,12 @@ void initTex(const std::string& resourceDirectory)
 		prog->addUniform("P");
 		prog->addUniform("V");
 		prog->addUniform("M");
-		prog->addUniform("matAMB");
-		prog->addUniform("matDIF");
-		prog->addUniform("matSPEC");
+		prog->addUniform("matAmb");
+		prog->addUniform("matDif");
+		prog->addUniform("matSpec");
 		prog->addUniform("shine");
+		prog->addUniform("lightPos");
+		prog->addUniform("lightClr");
 		prog->addAttribute("vertPos");
 		prog->addAttribute("vertNor");
 
@@ -594,12 +596,12 @@ void initTex(const std::string& resourceDirectory)
 
 		//float dt = difftime(startTime, endTime);
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-		double dt = time_span.count();
+		//double dt = time_span.count();
 
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
 			GameObject cur = gameObjs[i];
-			vec3 rot = cur.getRot();
+			//vec3 rot = cur.getRot();
 			//cur.isColliding(gameObjs, player);
 			if (player->isColliding(cur.getPos())) {
 				cur.destroy();
@@ -648,6 +650,10 @@ void initTex(const std::string& resourceDirectory)
 		//Draw our scene - two meshes - right now to a texture
 		prog->bind();
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
+
+		//light
+		glUniform3f(prog->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
+		glUniform3f(prog->getUniform("lightClr"), 0.3, 0.3, 0.3);
 
 		//time(&startTime);
 
@@ -700,31 +706,41 @@ void initTex(const std::string& resourceDirectory)
 		{
 			//shiny blue plastic
 			case 0:
-				glUniform3f(prog->getUniform("matAMB"), 0.02, 0.04, 0.2);
-				glUniform3f(prog->getUniform("matDIF"), 0.0, 0.16, 0.9);
+				glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
+				glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
+				glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
+				glUniform1f(prog->getUniform("shine"), 120.0);
 				break;
 
 				//flat grey
 			case 1:
-				glUniform3f(prog->getUniform("matAMB"), 0.13, 0.13, 0.14);
-				glUniform3f(prog->getUniform("matDIF"), 0.3, 0.3, 0.4);
+				glUniform3f(prog->getUniform("matAmb"), 0.13, 0.13, 0.14);
+				glUniform3f(prog->getUniform("matDif"), 0.3, 0.3, 0.4);
+				glUniform3f(prog->getUniform("matSpec"), 0.1, 0.1, 0.1);
+				glUniform1f(prog->getUniform("shine"), 1.0);
 				break;
 
 				//brass
 			case 2:
-				glUniform3f(prog->getUniform("matAMB"), 0.3294, 0.2235, 0.02745);
-				glUniform3f(prog->getUniform("matDIF"), 0.7804, 0.5686, 0.11373);
+				glUniform3f(prog->getUniform("matAmb"), 0.3294, 0.2235, 0.02745);
+				glUniform3f(prog->getUniform("matDif"), 0.7804, 0.5686, 0.11373);
+				glUniform3f(prog->getUniform("matSpec"), 0.9922, 0.9412, 0.8078);
+				glUniform1f(prog->getUniform("shine"), 27.90);
 				break;
 
 				//ruby
 			case 3:
-				glUniform3f(prog->getUniform("matAMB"), 0.1745f, 0.01175f, 0.01175f);
-				glUniform3f(prog->getUniform("matDIF"), 0.61424f, 0.04136f, 0.04136f);
+				glUniform3f(prog->getUniform("matAmb"), 0.1745f, 0.01175f, 0.01175f);
+				glUniform3f(prog->getUniform("matDif"), 0.61424f, 0.04136f, 0.04136f);
+				glUniform3f(prog->getUniform("matSpec"), 0.727811f, 0.626959f, 0.626959f);
+				glUniform1f(prog->getUniform("shine"), 0.6);
 				break;
 
 			case 4: //ground color
-				glUniform3f(prog->getUniform("matAMB"), 0.1913f, 0.0735f, 0.0225f);
-				glUniform3f(prog->getUniform("matDIF"), 0.1, 0.27048f, 0.0828f);
+				glUniform3f(prog->getUniform("matAmb"), 0.1913f, 0.0735f, 0.0225f);
+				glUniform3f(prog->getUniform("matDif"), 0.7038f, 0.27048f, 0.0828f);
+				glUniform3f(prog->getUniform("matSpec"), 0.256777f, 0.137622f, 0.086014f);
+				glUniform1f(prog->getUniform("shine"), 12.8);
 				break;
 		}
 	}

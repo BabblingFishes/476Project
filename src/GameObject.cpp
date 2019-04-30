@@ -54,8 +54,10 @@ void GameObject::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack
     Model->pushMatrix();
       Model->translate(position);
       Model->rotate(radians(-90.f), vec3(1, 0, 0));
-      glUniform3f(prog->getUniform("matAMB"), 0.02, 0.04, 0.2);
-      glUniform3f(prog->getUniform("matDIF"), 0.0, 0.16, 0.9);
+      glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
+      glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
+      glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
+      glUniform1f(prog->getUniform("shine"), 120.0);
       glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
       shape->draw(prog);
     Model->popMatrix();
