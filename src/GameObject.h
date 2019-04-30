@@ -5,8 +5,13 @@
 #include "MatrixStack.h"
 #include "Shape.h"
 
+/*
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+*/
+
+#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/type_ptr.hpp"
+#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/matrix_transform.hpp"
 
 using namespace std;
 using namespace glm;

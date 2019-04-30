@@ -2,6 +2,8 @@
 build/*
 CMakeFiles/*
 *.cmake
+CMakeLists.txt
+CMakeCache.txt
 
 # visual studio trash #
 .vs/*

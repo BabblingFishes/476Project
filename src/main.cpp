@@ -29,9 +29,14 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GameObject.h"
 
 // value_ptr for glm
+/*
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+*/
+#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/type_ptr.hpp"
+#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/matrix_transform.hpp"
+#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtx/string_cast.hpp"
 
 #define NUMOBJS 11
 #define START_VELOCITY 0.0
@@ -45,18 +50,14 @@ using namespace std;
 using namespace glm;
 using namespace std::chrono;
 
+double timeScale;
+
 class Application : public EventCallbacks {
 public:
 	// Our shader program
 	std::shared_ptr<Program> prog;
 	std::shared_ptr<Program> texProg;
 	std::shared_ptr<Program> skyProg;
-
-	//timers for time based movement
-	time_t startTime;
-	time_t endTime;
-	high_resolution_clock::time_point t1;
-	high_resolution_clock::time_point t2;
 
 	// Shape to be used (from obj file)
 	shared_ptr<Shape> cowShape;
@@ -129,20 +130,21 @@ public:
 		//TODO the View logic can probably be abstracted out
 		vec3 update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown) {
 			//TODO after implementing real-time, make these values constants
-			float moveMagn = 0.01f; //player force
+			//cout << "double " << timeScale << "\n\tfloat " << float(timeScale) << "\n";
+			float moveMagn = 2.0f; //player force
 			float mass = 1; // player mass
 			float friction = 0.98f;
-			float rotSpeed = 0.1f; // rotationSpeed
+			float rotSpeed = 30.0f * timeScale; // rotationSpeed
 
 			//TODO implement drifty camera too
-			float cameraSpeed = 0.02f; //camera rotation acceleration
+			float cameraSpeed = 5.0f * timeScale; //camera rotation acceleration
 
 			rotation += vec3(0, rotSpeed, 0);
 
 			// camera rotation
-			if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+			if (arrowIsDown[0]) camPhi = max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
 			if (arrowIsDown[1]) camTheta -= cameraSpeed;
-			if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+			if (arrowIsDown[2]) camPhi = min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
 			if (arrowIsDown[3]) camTheta += cameraSpeed;
 
 			//player and camera orientation
@@ -178,7 +180,7 @@ public:
 			velocity += acceleration;
 
 
-			position += velocity;
+			position += velocity * float(timeScale);
 
 			//NOTE this was for updating the collision box
 			/*minx = position.x - HEAD_RADIUS;
@@ -588,14 +590,11 @@ void initTex(const std::string& resourceDirectory)
 	}
 
 	void renderScene(shared_ptr<MatrixStack> View, shared_ptr<MatrixStack> Model) {
+		//cout << timeScale;
 		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
 
 		Model->loadIdentity();
 		//Model->rotate(radians(cTheta), vec3(0, 1, 0));
-
-		//float dt = difftime(startTime, endTime);
-		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-		double dt = time_span.count();
 
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
@@ -624,6 +623,14 @@ void initTex(const std::string& resourceDirectory)
 
 	void render()
 	{
+		/*high_resolution_clock::time_point t1;
+		high_resolution_clock::time_point t2;
+
+		t1 = high_resolution_clock::now();
+		printf(t1);*/
+
+		auto start = std::chrono::steady_clock::now();
+
 		// Get current frame buffer size.
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -650,10 +657,6 @@ void initTex(const std::string& resourceDirectory)
 		prog->bind();
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
 
-		//time(&startTime);
-
-		t1 = high_resolution_clock::now();
-
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuf[0]);
 		Model->pushMatrix();
 			renderScene(View, Model); //note: this was previously FBOView
@@ -664,8 +667,6 @@ void initTex(const std::string& resourceDirectory)
 			renderScene(View, Model);
 		Model->popMatrix();
 
-		//time(&endTime);
-		t2 = high_resolution_clock::now();
 		prog->unbind();
 
 		//draw the sky box
@@ -692,6 +693,15 @@ void initTex(const std::string& resourceDirectory)
 
 		Projection->popMatrix();
 		View->popMatrix();
+
+		/*
+		t2 = high_resolution_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		timeScale = time_span.count();
+		cout << typeid(t1).name() << "\n";
+		*/
+		auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start);
+		timeScale = elapsed.count() / (10e+9);
 	}
 
 	// helper function to set materials for shading
