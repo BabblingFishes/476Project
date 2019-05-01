@@ -27,6 +27,8 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "WindowManager.h"
 #include "GLTextureWriter.h"
 #include "GameObject.h"
+#include "GamePlayer.h"
+#include "GOCow.h"
 
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
@@ -69,147 +71,29 @@ public:
 	float randXDir;
 	float randZDir;// = ((float)rand() / (RAND_MAX)) + 1;
 
-	class GamePlayer {
-	private:
-		shared_ptr<Shape> shape;
-		float radius;
-		vec3 rotation;
-		vec3 position;
-		vec3 direction;
-		vec3 velocity;
-		float camPhi;
-		float camTheta;
-		float camZoom;
-
-	public:
-		vec3 getPos() { return position; }
-		vec3 getDir() { return direction; }
-		vec3 getVel() { return velocity; }
-
-		GamePlayer(shared_ptr<Shape> shape, vec3 position, vec3 direction, vec3 velocity) {
-			this->shape = shape;
-			this->radius = 1; //TODO assign this according to shape
-			this->rotation = vec3(0, 0, 0);
-			this->position = position;
-			this->direction = direction;
-			this->velocity = velocity;
-			this->camPhi = 0;
-			this->camTheta = 0;
-			this->camZoom = -10;
-		}
-
-		// check collisions with a single point
-		// note that this is a sphere
-		bool isColliding(glm::vec3 point) {
-			return length(position - point) < radius;
-		}
-
-		void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model){
-			//player model
-			Model->pushMatrix();
-			Model->translate(position);
-			Model->rotate(rotation.x, vec3(1, 0, 0));
-    	Model->rotate(rotation.z, vec3(0, 0, 1));
-			Model->rotate(rotation.y, vec3(0, 1, 0));
-			 // offset for wobble
-			Model->rotate(0.2, vec3(0, 0, 1));
-			Model->translate(vec3(0.3, 0, 0));
-			//material
-			glUniform3f(prog->getUniform("matAmb"), 0.3294, 0.2235, 0.02745);
-			glUniform3f(prog->getUniform("matDif"), 0.7804, 0.5686, 0.11373);
-			//draw
-			glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-			shape->draw(prog);
-			Model->popMatrix();
-		}
-
-		/* moves the player and camera */
-		//TODO this needs to be done real-time
-		//TODO the View logic can probably be abstracted out
-		vec3 update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown) {
-			//TODO after implementing real-time, make these values constants
-			float moveMagn = 0.01f; //player force
-			//float mass = 1; // player mass
-			float friction = 0.98f;
-			float rotSpeed = 0.1f; // rotationSpeed
-
-			//TODO implement drifty camera too
-			float cameraSpeed = 0.02f; //camera rotation acceleration
-
-			rotation += vec3(0, rotSpeed, 0);
-
-			// camera rotation
-			if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
-			if (arrowIsDown[1]) camTheta -= cameraSpeed;
-			if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
-			if (arrowIsDown[3]) camTheta += cameraSpeed;
-
-			//player and camera orientation
-			vec3 cameraForward = vec3(cos(camPhi) * -sin(camTheta),
-	                            	sin(camPhi),
-	                            	cos(camPhi) * -cos(camTheta));
-			//TODO normalize?
-			vec3 playerForward = normalize(vec3(-sin(camTheta),
-	                            	0,
-	                            	-cos(camTheta)));
-			vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
-
-			//NOTE generally, vec3 velocity += (vec3 acceleration * float timePassed)
-
-			vec3 zAccel = playerForward * moveMagn;
-			vec3 xAccel = playerLeft * moveMagn;
-
-			//player velocity
-
-			vec3 acceleration = vec3(0, 0, 0);
 
 
-			//player controls
-			if (wasdIsDown[0]) acceleration -= zAccel;
-	  	if (wasdIsDown[1]) acceleration -= xAccel;
-	  	if (wasdIsDown[2]) acceleration += zAccel;
-	  	if (wasdIsDown[3]) acceleration += xAccel;
 
-			//acceleration = normalize(acceleration) * moveMagn / mass;
-			//TODO gravity
-			//TODO more accurate friction
-			velocity *= friction;// ""friction""
-			velocity += acceleration;
-
-
-			position += velocity;
-
-			//NOTE this was for updating the collision box
-			/*minx = position.x - HEAD_RADIUS;
-			minz = position.z - HEAD_RADIUS;
-			maxx = position.x + HEAD_RADIUS;
-			maxz = position.z + HEAD_RADIUS;*/
-
-			// place the camera, pointed at the player
-			//TODO this can be abstracted out if needed
-			vec3 cameraPos = position - (cameraForward * camZoom);
-			View->lookAt(cameraPos, position, vec3(0, 1, 0));
-
-			return position;
-		}
-	};
-
-
-	vector<GameObject> generateObjs(std::shared_ptr<Shape> shape) {
-		vector<GameObject> gameObjs;
+	vector<GOCow> generateObjs(std::shared_ptr<Shape> shape) {
+		vector<GOCow> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
 			randXPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
 			randZPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
 			randXDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
 			randZDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
-			GameObject obj = GameObject(vec3(randXPos, 0.f, randZPos), vec3(randXDir, 0.f, randZDir), START_VELOCITY, shape, prog);
+			GOCow obj = GOCow(shape,
+				2.0, //radius
+				vec3(randXPos, 0, randZPos),
+				vec3(randXDir, 0, randZDir),
+				vec3(1, 1, 1),
+				vec3(randXDir, 0, randZDir));
 			gameObjs.push_back(obj);
 		}
 
 		return gameObjs;
 	}
 
-	vector<GameObject> gameObjs;
+	vector<GOCow> gameObjs;
 
 	WindowManager * windowManager = nullptr;
 
@@ -600,11 +484,12 @@ void initTex(const std::string& resourceDirectory)
 
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
-			GameObject cur = gameObjs[i];
+			GOCow cur = gameObjs[i];
 			//vec3 rot = cur.getRot();
 			//cur.isColliding(gameObjs, player);
 			if (player->isColliding(cur.getPos())) {
-				cur.destroy();
+				//cur.destroy(); TODO
+				cout << "boop" << endl;
 			}
 
 			cur.draw(prog, Model);
