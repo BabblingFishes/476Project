@@ -29,6 +29,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GameObject.h"
 
 // value_ptr for glm
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -39,6 +40,8 @@ Winter 2017 - ZJW (Piddington texture write)
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
 #define WORLD_SIZE 100
+#define MAP_WIDTH 40
+#define MAP_LENGTH 60
 
 using namespace std;
 using namespace glm;
@@ -61,6 +64,7 @@ public:
 	shared_ptr<Shape> cowShape;
 	shared_ptr<Shape> playerShape;
 	shared_ptr<Shape> cube;
+    shared_ptr<Shape> tree;
 	shared_ptr<SkyBox> skybox;
 
 	//random num generators for position and direction generation
@@ -208,8 +212,48 @@ public:
 
 		return gameObjs;
 	}
+    
+    vector<GameObject> generateMap(std::shared_ptr<Shape> shape) {
+        vector<GameObject> mapObjs;
+        int xPos, zPos;
+        
+        for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 5) {
+            if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
+                zPos = i;
+                xPos = -MAP_WIDTH / 2;
+                GameObject obj1 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                mapObjs.push_back(obj1);
+                xPos = MAP_WIDTH / 2;
+                GameObject obj2 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                mapObjs.push_back(obj2);
+                cout << "zPos: " << zPos << endl;
+                cout << "xPos: " << xPos << endl;
+            }
+            else {
+                zPos = i;
+                xPos = -MAP_WIDTH / 2;
+                GameObject obj1 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                mapObjs.push_back(obj1);
+                xPos = MAP_WIDTH / 2;
+                GameObject obj2 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                mapObjs.push_back(obj2);
+                
+                xPos = i;
+                zPos = -MAP_LENGTH / 2;
+                GameObject obj3 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                mapObjs.push_back(obj3);
+                
+                zPos = MAP_LENGTH / 2;
+                GameObject obj4 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                mapObjs.push_back(obj4);
+            }
+        }
+     
+        return mapObjs;
+    }
 
 	vector<GameObject> gameObjs;
+    vector<GameObject> mapObjs;
 
 	WindowManager * windowManager = nullptr;
 
@@ -382,12 +426,12 @@ unsigned int createSky(string dir, vector<string> faces) {
 void initTex(const std::string& resourceDirectory)
 {
 	 vector<std::string> faces {
-			 "rt.tga",
-			 "lf.tga",
-			 "up.tga",
-			 "sist_dn.tga",
-			 "bk.tga",
-			 "ft.tga"
+			 "SkyMidNight_Right.png",
+			 "SkyMidNight_Left.png",
+			 "SkyMidNight_Top.png",
+			 "SkyMidNight_Bottom.png",
+			 "SkyMidNight_Front.png",
+			 "SkyMidNight_Back.png"
 	 };
 	 cubeMapTexture = createSky(resourceDirectory + "/",  faces);
 }
@@ -492,6 +536,12 @@ void initTex(const std::string& resourceDirectory)
 		cowShape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
 		cowShape->resize();
 		cowShape->init();
+        
+        // Initialize the obj mesh VBOs etc
+        tree = make_shared<Shape>();
+        tree->loadMesh(resourceDirectory + "/tree.obj");
+        tree->resize();
+        tree->init();
 
 		//initialize skybox
 		cube = make_shared<Shape>();
@@ -511,6 +561,7 @@ void initTex(const std::string& resourceDirectory)
 
 		player = new GamePlayer(playerShape, vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
 		gameObjs = generateObjs(cowShape);
+        mapObjs = generateMap(tree);
 		//Initialize the geometry to render a quad to the screen
 		initQuad();
 	}
@@ -596,6 +647,14 @@ void initTex(const std::string& resourceDirectory)
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double dt = time_span.count();
 
+        Model->pushMatrix();
+        for (uint i = 0; i < mapObjs.size(); i++) {
+            GameObject cur = mapObjs[i];
+            
+            cur.draw(prog, Model);
+        }
+        Model->popMatrix();
+        
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
 			GameObject cur = gameObjs[i];
