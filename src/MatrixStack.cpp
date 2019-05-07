@@ -1,7 +1,6 @@
 
 #include "MatrixStack.h"
-//#include <glm/gtc/matrix_transform.hpp>
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/matrix_transform.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 static const int MaxMatrixSize = 100;
 

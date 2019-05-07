@@ -29,14 +29,9 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GameObject.h"
 
 // value_ptr for glm
-/*
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
-*/
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/type_ptr.hpp"
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/matrix_transform.hpp"
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtx/string_cast.hpp"
 
 #define NUMOBJS 11
 #define START_VELOCITY 0.0

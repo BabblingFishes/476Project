@@ -6,16 +6,10 @@
 #include <stack>
 #include <memory>
 
-/*
 #include "glm/glm.hpp"
 #include "glm/vec4.hpp"
 #include "glm/mat4x4.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-*/
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/glm.hpp"
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/vec4.hpp"
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/mat4x4.hpp"
-#include "C:/Users/Josh/Documents/Visual Studio 2019/SDKs/vcpkg-master/packages/glm_x64-windows/include/glm/gtc/matrix_transform.hpp"
 
 
 class MatrixStack
