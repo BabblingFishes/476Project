@@ -97,43 +97,43 @@ public:
 
 		return gameObjs;
 	}
-    
+
     vector<GameObject> generateMap(std::shared_ptr<Shape> shape) {
         vector<GameObject> mapObjs;
         int xPos, zPos;
-        
+
         for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 5) {
             if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
                 zPos = i;
                 xPos = -MAP_WIDTH / 2;
-                GameObject obj1 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                GameObject obj1 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
                 mapObjs.push_back(obj1);
                 xPos = MAP_WIDTH / 2;
-                GameObject obj2 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                GameObject obj2 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
                 mapObjs.push_back(obj2);
-                cout << "zPos: " << zPos << endl;
-                cout << "xPos: " << xPos << endl;
+                //cout << "zPos: " << zPos << endl; //DEBUG
+                //cout << "xPos: " << xPos << endl; //DEBUG
             }
             else {
                 zPos = i;
                 xPos = -MAP_WIDTH / 2;
-                GameObject obj1 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                GameObject obj1 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
                 mapObjs.push_back(obj1);
                 xPos = MAP_WIDTH / 2;
-                GameObject obj2 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                GameObject obj2 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
                 mapObjs.push_back(obj2);
-                
+
                 xPos = i;
                 zPos = -MAP_LENGTH / 2;
-                GameObject obj3 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                GameObject obj3 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
                 mapObjs.push_back(obj3);
-                
+
                 zPos = MAP_LENGTH / 2;
-                GameObject obj4 = GameObject(vec3(xPos, 0.f, zPos), vec3(0.f, 0.f, 0.f), 0.f, shape, prog);
+                GameObject obj4 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
                 mapObjs.push_back(obj4);
             }
         }
-     
+
         return mapObjs;
     }
 
@@ -423,7 +423,7 @@ void initTex(const std::string& resourceDirectory)
 		cowShape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
 		cowShape->resize();
 		cowShape->init();
-        
+
         // Initialize the obj mesh VBOs etc
         tree = make_shared<Shape>();
         tree->loadMesh(resourceDirectory + "/tree.obj");
@@ -537,11 +537,11 @@ void initTex(const std::string& resourceDirectory)
         Model->pushMatrix();
         for (uint i = 0; i < mapObjs.size(); i++) {
             GameObject cur = mapObjs[i];
-            
+
             cur.draw(prog, Model);
         }
         Model->popMatrix();
-        
+
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
 			GOCow *cur = &(gameObjs[i]);
