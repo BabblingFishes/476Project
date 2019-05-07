@@ -1,14 +1,23 @@
 #include "GameObject.h"
-#include <glad/glad.h>
-#include <iostream>
-#include "GLSL.h"
-#include "Program.h"
-#include "Shape.h"
 
 using namespace std;
 using namespace glm;
 
+GameObject::GameObject(){}
+
+GameObject::GameObject(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
+  this->shape = shape;
+  this->radius = radius;
+  this->position = position;
+  this->rotation = rotation;
+  this->scale = scale;
+  this->velocity = velocity;
+  mass = 1; //TODO
+  netForce = vec3(0.0f);
+}
+
 float GameObject::getRadius() { return radius; }
+float GameObject::getMass() { return mass; }
 vec3 GameObject::getPos() { return position; }
 vec3 GameObject::getRot() { return rotation; }
 vec3 GameObject::getScale() { return scale; }
@@ -19,22 +28,42 @@ void GameObject::setRot(vec3 rotation) { this->rotation = rotation; }
 void GameObject::setScale(vec3 scale) { this->scale = scale; }
 void GameObject::setVel(vec3 velocity) { this->velocity = velocity; }
 
-GameObject::GameObject() {}
-
-GameObject::GameObject(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
-  this->shape = shape;
-  this->radius = radius;
-  this->position = position;
-  this->rotation = rotation;
-  this->scale = scale;
-  this->velocity = velocity;
-}
-
 bool GameObject::isColliding(vec3 point) {
   return length(position - point) < radius;
 }
 
+bool GameObject::isColliding(GameObject *other) {
+  return length(position - other->getPos()) < (radius + other->getRadius());
+}
+
+void GameObject::addForce(vec3 force) {
+  netForce += force;
+}
+
+// called once per frame
 void GameObject::update() {
+  move();
+}
+
+// uses physics to decide new position
+void GameObject::move() {
+  //TODO: add gravity
+  //TODO: spin?
+
+  velocity *= 0.98f; // ""friction"" TODO
+  //velocity += netForce * timePassed / mass
+  velocity += netForce / mass;
+  position += velocity;
+  netForce = vec3(0);
+
+  if(position.y < 0) {
+    position.y -= position.y;
+  } //TODO we need actual ground collision but this is a fix for now
+}
+
+// default collision behavior
+// TODO: bounce & spin?
+void GameObject::collide(GameObject *other) {
   return;
 }
 

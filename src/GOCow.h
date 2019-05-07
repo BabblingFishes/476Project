@@ -21,14 +21,16 @@ using namespace glm;
 
 class GOCow : public GameObject {
 private:
-  bool toDraw;
   bool collected;
 
 public:
+  //random constructor
+  GOCow(std::shared_ptr<Shape> shape, int worldSize);
+
+  //specific constructor
   GOCow(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
-  bool getDraw();
-  bool getCollected();
+  bool isCollected();
 
   void update();
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);

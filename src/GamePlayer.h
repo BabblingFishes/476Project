@@ -9,6 +9,7 @@
 #include "MatrixStack.h"
 #include "Shape.h"
 #include "GameObject.h"
+#include "GOCow.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -21,19 +22,24 @@ using namespace glm;
 
 class GamePlayer : public GameObject {
 private:
-  vec3 camPosition;
+  float shipRadius;
   float camPhi;
   float camTheta;
   float camZoom;
+  vec3 camPosition;
+
+  void positionCamera();
 
 public:
   GamePlayer(shared_ptr<Shape> shape, vec3 position, vec3 rotation, vec3 scale);
 
-  vec3 update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown);
-
-  void pointCamera(shared_ptr<MatrixStack> View);
+  void update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
+
+  void collide(GOCow *cow);
+
+  void beamIn(GameObject *other);
 };
 
 #endif
