@@ -77,17 +77,18 @@ public:
 	vector<GOCow> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GOCow> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
+			/*
 			randXPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
 			randZPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
-			randXDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
-			randZDir = (((float)rand() / (RAND_MAX)) * 2) - 1;
+			randRot = (((float)rand() / (RAND_MAX)) * pi);
 			GOCow obj = GOCow(shape,
 				2.0, //radius
 				vec3(randXPos, 0, randZPos),
-				vec3(randXDir, 0, randZDir),
+				vec3(0, randRot, 0),
 				vec3(1, 1, 1),
-				vec3(randXDir, 0, randZDir));
-			gameObjs.push_back(obj);
+				vec3(1, 0, 1));
+				*/
+			gameObjs.push_back(GOCow(shape, WORLD_SIZE));
 		}
 
 		return gameObjs;
@@ -484,15 +485,14 @@ void initTex(const std::string& resourceDirectory)
 
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
-			GOCow cur = gameObjs[i];
-			//vec3 rot = cur.getRot();
+			GOCow *cur = &(gameObjs[i]);
 			//cur.isColliding(gameObjs, player);
-			if (player->isColliding(cur.getPos())) {
-				//cur.destroy(); TODO
-				cout << "boop" << endl;
+			if (cur->isColliding(player)) {
+				cur->collide(player);
+				player->collide(cur);
 			}
-
-			cur.draw(prog, Model);
+			cur->update();
+			cur->draw(prog, Model);
 		}
 
 		//ground
