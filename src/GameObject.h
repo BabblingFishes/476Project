@@ -1,3 +1,7 @@
+#pragma once
+#ifndef __HC_GAMEOBJECT_INCLUDED__
+#define __HC_GAMEOBJECT_INCLUDED__
+
 #include <glad/glad.h>
 #include <iostream>
 #include "GLSL.h"
@@ -11,44 +15,47 @@
 using namespace std;
 using namespace glm;
 
-#define PLAYER_RADIUS 1.0
-#define HEAD_RADIUS 2.0
-
 class GameObject {
-private:
-  vec3 position;
-  vec3 direction;
-  vec3 rotation;
-  float velocity;
+protected:
   shared_ptr<Shape> shape;
-  bool toDraw;
-  bool collected;
-  shared_ptr<Program> prog;
-  // bounding box
-  float minx = position.x - PLAYER_RADIUS;
-  float minz = position.z - PLAYER_RADIUS;
-  float maxx = position.x + PLAYER_RADIUS;
-  float maxz = position.z + PLAYER_RADIUS;
+  float radius;
+  float mass;
+  vec3 position;
+  vec3 rotation;
+  vec3 scale;
+  vec3 velocity;
+  vec3 netForce; //the net force acting on this object in this frame
 
 public:
+  GameObject();
+  
+  GameObject(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
+
+  float getRadius();
+  float getMass();
   vec3 getPos();
-  vec3 getDir();
   vec3 getRot();
-  float getVel();
-  bool getDraw();
-  bool getCollected();
-  float getMinx();
-  float getMinz();
-  float getMaxx();
-  float getMaxz();
+  vec3 getScale();
+  vec3 getVel();
 
-  void setPos(vec3 pos);
 
-  GameObject(vec3 position, vec3 direction, float velocity, shared_ptr<Shape> shape, shared_ptr<Program> prog);
+  void setPos(vec3 position);
+  void setRot(vec3 rotation);
+  void setScale(vec3 scale);
+  void setVel(vec3 velocity);
 
-  vec3 update(double dt);
+  bool isColliding(vec3 point);
+  bool isColliding(GameObject *other);
 
-  void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
+  void addForce(vec3 force);
 
-  void destroy();
+  virtual void update();
+  virtual void move();
+  virtual void collide(GameObject *other);
+
+  virtual void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
+
+
 };
+
+#endif
