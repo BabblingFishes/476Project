@@ -66,7 +66,8 @@ public:
 	shared_ptr<Shape> cowShape;
 	shared_ptr<Shape> playerShape;
 	shared_ptr<Shape> cube;
-    shared_ptr<Shape> tree;
+  shared_ptr<Shape> tree;
+
 	shared_ptr<SkyBox> skybox;
 
 	//random num generators for position and direction generation
@@ -337,9 +338,11 @@ void initTex(const std::string& resourceDirectory)
 		// Initialize the GLSL program.
 		prog = make_shared<Program>();
 		prog->setVerbose(true);
+
+		//TODO this may have a negatives error
 		prog->setShaderNames(
-			resourceDirectory + "/point_vert.glsl",
-			resourceDirectory + "/point_frag.glsl");
+			resourceDirectory + "/point_vert_BP.glsl",
+			resourceDirectory + "/point_frag_BP.glsl");
 		if (!prog->init())
 		{
 			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
@@ -420,15 +423,15 @@ void initTex(const std::string& resourceDirectory)
 
 		// Initialize the obj mesh VBOs etc
 		cowShape = make_shared<Shape>();
-		cowShape->loadMesh(resourceDirectory + "/Nefertiti-10K.obj");
+		cowShape->loadMesh(resourceDirectory + "/bunny.obj");
 		cowShape->resize();
 		cowShape->init();
 
-        // Initialize the obj mesh VBOs etc
-        tree = make_shared<Shape>();
-        tree->loadMesh(resourceDirectory + "/tree.obj");
-        tree->resize();
-        tree->init();
+    // Initialize the obj mesh VBOs etc
+    tree = make_shared<Shape>();
+    tree->loadMesh(resourceDirectory + "/tree.obj");
+    tree->resize();
+    tree->init();
 
 		//initialize skybox
 		cube = make_shared<Shape>();

@@ -63,8 +63,8 @@ void GOCow::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Mod
     else {
       glUniform3f(prog->getUniform("matAmb"), 0.1745f, 0.01175f, 0.01175f);
 			glUniform3f(prog->getUniform("matDif"), 0.61424f, 0.04136f, 0.04136f);
-			glUniform3f(prog->getUniform("matSpec"), 0.727811f, 0.626959f, 0.626959f);
-			glUniform1f(prog->getUniform("shine"), 0.6);
+			glUniform3f(prog->getUniform("matSpec"), 0.0727811f, 0.0626959f, 0.0626959f);
+			glUniform1f(prog->getUniform("shine"), 0.1);
     }
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);
