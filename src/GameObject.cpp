@@ -69,15 +69,19 @@ void GameObject::collide(GameObject *other) {
 
 void GameObject::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
+    //First translate to put scaled trees back on ground plane
+    Model->translate(vec3(0, 4, 0));
     Model->translate(position);
     Model->rotate(rotation.x, vec3(1, 0, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->rotate(rotation.y, vec3(0, 1, 0));
+    //Model->scale(scale);
     //TODO set material here
     glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
     glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
     glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
     glUniform1f(prog->getUniform("shine"), 120.0);
+    Model->scale(scale);
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);
   Model->popMatrix();
