@@ -19,5 +19,5 @@ void main() {
     vec3 ambientRefl = matAmb;
 
     vec3 ReflColor = (ambientRefl + diffuseRefl + specularRefl) * lightClr / fallOff;
-	color = vec4(ReflColor, 1.0);
+		color = vec4(ReflColor, 1.0);
 }
