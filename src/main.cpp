@@ -52,9 +52,21 @@ using namespace std::chrono;
 class Application : public EventCallbacks {
 public:
 	// Our shader program
-	std::shared_ptr<Program> prog;
-	std::shared_ptr<Program> texProg;
-	std::shared_ptr<Program> skyProg;
+	shared_ptr<Program> prog;
+	shared_ptr<Program> texProg;
+	shared_ptr<Program> skyProg;
+	shared_ptr<Program> depthProg;
+	shared_ptr<Program> shadowProg;
+
+
+
+	//shadowmapping
+	mat4 lightP;
+	mat4 lightV;
+
+	GLuint depthMapFBO;
+	const GLuint S_WIDTH = 1024, S_HEIGHT = 1024;
+	GLuint depthMap;
 
 	//timers for time based movement
 	time_t startTime;
@@ -70,29 +82,12 @@ public:
 
 	shared_ptr<SkyBox> skybox;
 
-	//random num generators for position and direction generation
-	int randXPos; //= rand() % 20;
-	int randZPos; //= rand() % 20;
-	float randXDir;
-	float randZDir;// = ((float)rand() / (RAND_MAX)) + 1;
-
 
 
 
 	vector<GOCow> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GOCow> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
-			/*
-			randXPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
-			randZPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
-			randRot = (((float)rand() / (RAND_MAX)) * pi);
-			GOCow obj = GOCow(shape,
-				2.0, //radius
-				vec3(randXPos, 0, randZPos),
-				vec3(0, randRot, 0),
-				vec3(1, 1, 1),
-				vec3(1, 0, 1));
-				*/
 			gameObjs.push_back(GOCow(shape, WORLD_SIZE));
 		}
 
@@ -281,48 +276,111 @@ public:
 		glViewport(0, 0, width, height);
 	}
 
-unsigned int createSky(string dir, vector<string> faces) {
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	unsigned int createSky(string dir, vector<string> faces) {
+		unsigned int textureID;
+		glGenTextures(1, &textureID);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-	int width, height, nrChannels;
-	stbi_set_flip_vertically_on_load(false);
-	for(GLuint i = 0; i < faces.size(); i++) {
-		 unsigned char *data =
-		 stbi_load((dir+faces[i]).c_str(), &width, &height, &nrChannels, 0);
-		 if (data) {
-				 glTexImage2D(
-						 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-						 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		 } else {
-				 std::cout << "failed to load: " << (dir+faces[i]).c_str() << std::endl;
-		 }
+		int width, height, nrChannels;
+		stbi_set_flip_vertically_on_load(false);
+		for(GLuint i = 0; i < faces.size(); i++) {
+			 unsigned char *data =
+			 stbi_load((dir+faces[i]).c_str(), &width, &height, &nrChannels, 0);
+			 if (data) {
+					 glTexImage2D(
+							 GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+							 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			 } else {
+					 std::cout << "failed to load: " << (dir+faces[i]).c_str() << std::endl;
+			 }
+		}
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+		return textureID;
 	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	return textureID;
-}
-
-// Code to load in the three textures
-void initTex(const std::string& resourceDirectory)
-{
-	 vector<std::string> faces {
-			 "SkyMidNight_Right.png",
-			 "SkyMidNight_Left.png",
-			 "SkyMidNight_Top.png",
-			 "SkyMidNight_Bottom.png",
-			 "SkyMidNight_Front.png",
-			 "SkyMidNight_Back.png"
-	 };
-	 cubeMapTexture = createSky(resourceDirectory + "/",  faces);
-}
 
 	/*** INITIALIZATIONS ***/
+
+	// Code to load in skybox textures
+	void initTex(const std::string& resourceDirectory)
+	{
+		 vector<std::string> faces {
+				 "SkyMidNight_Right.png",
+				 "SkyMidNight_Left.png",
+				 "SkyMidNight_Top.png",
+				 "SkyMidNight_Bottom.png",
+				 "SkyMidNight_Front.png",
+				 "SkyMidNight_Back.png"
+		 };
+		 cubeMapTexture = createSky(resourceDirectory + "/",  faces);
+	}
+
+	// initializes shadowmapping program
+	void initShadowMapping(const std::string& resourceDirectory) {
+		depthProg = make_shared<Program>();
+		depthProg->setVerbose(true);
+		depthProg->setShaderNames(
+			resourceDirectory + "/depth_vert.glsl",
+			resourceDirectory + "/depth_frag.glsl");
+		if (!depthProg->init()) {
+			std::cerr << "Depth shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+
+		depthProg->addUniform("LP");
+		depthProg->addUniform("LV");
+		depthProg->addUniform("M");
+		depthProg->addAttribute("vertPos");
+		depthProg->addAttribute("vertNor"); //req'd by shape
+		depthProg->addAttribute("vertTex"); //req'd by shape
+
+
+		shadowProg = make_shared<Program>();
+		shadowProg->setVerbose(true);
+		shadowProg->setShaderNames(resourceDirectory + "/shadow_vert.glsl", resourceDirectory + "/shadow_frag.glsl");
+		if (!shadowProg->init()) {
+			std::cerr << "Shadow shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+
+		shadowProg->addUniform("P");
+		shadowProg->addUniform("M");
+		shadowProg->addUniform("V");
+		shadowProg->addUniform("LS");
+		shadowProg->addUniform("lightDir");
+		shadowProg->addAttribute("vertPos");
+		shadowProg->addAttribute("vertNor");
+		shadowProg->addAttribute("vertTex");
+		shadowProg->addUniform("Texture0");
+		shadowProg->addUniform("shadowDepth");
+
+		/* FBO setup */
+
+		//generate the FBO for the shadow depth
+  	glGenFramebuffers(1, &depthMapFBO);
+
+		//generate the texture
+  	glGenTextures(1, &depthMap);
+  	glBindTexture(GL_TEXTURE_2D, depthMap);
+  	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, S_WIDTH, S_HEIGHT,
+  		0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//bind with framebuffer's depth buffer
+  	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+  	glDrawBuffer(GL_NONE);
+  	glReadBuffer(GL_NONE);
+  	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
 
 	void init(const std::string& resourceDirectory) {
 		int width, height;
@@ -338,14 +396,11 @@ void initTex(const std::string& resourceDirectory)
 		// Initialize the GLSL program.
 		prog = make_shared<Program>();
 		prog->setVerbose(true);
-
-		//TODO this may have a negatives error
 		prog->setShaderNames(
 			resourceDirectory + "/point_vert_BP.glsl",
 			resourceDirectory + "/point_frag_BP.glsl");
-		if (!prog->init())
-		{
-			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+		if (!prog->init()) {
+			std::cerr << "Program shaders failed to compile... exiting!" << std::endl;
 			exit(1);
 		}
 		prog->addUniform("P");
@@ -360,6 +415,9 @@ void initTex(const std::string& resourceDirectory)
 		prog->addAttribute("vertPos");
 		prog->addAttribute("vertNor");
 
+		initShadowMapping(resourceDirectory);
+
+		//begin TODO - i think these are leftover from another project
 		//create two frame buffer objects to toggle between
 		glGenFramebuffers(2, frameBuf);
 		glGenTextures(2, texBuf);
@@ -378,6 +436,7 @@ void initTex(const std::string& resourceDirectory)
 		//create another FBO so we can swap back and forth
 		createFBO(frameBuf[1], texBuf[1]);
 		//this one doesn't need depth
+		//end TODO
 
 		//initialize textures
 		initTex(resourceDirectory);
@@ -391,7 +450,7 @@ void initTex(const std::string& resourceDirectory)
 			resourceDirectory + "/tex_fragH.glsl");
 		if (!texProg->init())
 		{
-			std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+			std::cerr << "Texture shaders failed to compile... exiting!" << std::endl;
 			exit(1);
 		}
 		texProg->addUniform("texBuf");
@@ -410,7 +469,7 @@ void initTex(const std::string& resourceDirectory)
         resourceDirectory + "/skybox_vert.glsl",
         resourceDirectory + "/skybox_frag.glsl");
     if (! skyProg->init()) {
-        std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
+        std::cerr << "Skybox shaders failed to compile... exiting!" << std::endl;
         exit(1);
     }
     skyProg->addUniform("P");
@@ -418,6 +477,7 @@ void initTex(const std::string& resourceDirectory)
     skyProg->addUniform("V");
     skyProg->addAttribute("vertPos");
 	}
+
 
 	void initGeom(const std::string& resourceDirectory) {
 
