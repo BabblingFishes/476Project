@@ -42,8 +42,8 @@ Winter 2017 - ZJW (Piddington texture write)
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
 #define WORLD_SIZE 100
-#define MAP_WIDTH 40
-#define MAP_LENGTH 60
+#define MAP_WIDTH 120
+#define MAP_LENGTH 162
 
 using namespace std;
 using namespace glm;
@@ -67,7 +67,8 @@ public:
 	shared_ptr<Shape> playerShape;
 	shared_ptr<Shape> cube;
   shared_ptr<Shape> tree;
-
+  shared_ptr<Shape> sphere;
+  
 	shared_ptr<SkyBox> skybox;
 
 	//random num generators for position and direction generation
@@ -103,36 +104,69 @@ public:
         vector<GameObject> mapObjs;
         int xPos, zPos;
 
-        for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 5) {
+        for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 4) {
             if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
                 zPos = i;
-                xPos = -MAP_WIDTH / 2;
-                GameObject obj1 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+                xPos = (-MAP_WIDTH / 2);
+                GameObject obj1 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
                 mapObjs.push_back(obj1);
-                xPos = MAP_WIDTH / 2;
-                GameObject obj2 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+                xPos = (MAP_WIDTH / 2);
+                GameObject obj2 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
                 mapObjs.push_back(obj2);
-                //cout << "zPos: " << zPos << endl; //DEBUG
-                //cout << "xPos: " << xPos << endl; //DEBUG
             }
             else {
                 zPos = i;
                 xPos = -MAP_WIDTH / 2;
-                GameObject obj1 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+                GameObject obj1 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
                 mapObjs.push_back(obj1);
                 xPos = MAP_WIDTH / 2;
-                GameObject obj2 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+                GameObject obj2 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
                 mapObjs.push_back(obj2);
 
                 xPos = i;
                 zPos = -MAP_LENGTH / 2;
-                GameObject obj3 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+                GameObject obj3 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
                 mapObjs.push_back(obj3);
-
                 zPos = MAP_LENGTH / 2;
-                GameObject obj4 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+                GameObject obj4 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
                 mapObjs.push_back(obj4);
             }
+        }
+        //Tree lines within border. Each for loop is a line
+        for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
+            if (i > -20 || i < -40) {
+                xPos = i;
+                if (i % 2 == 0) {
+                    zPos = -30 + 2;
+                }
+                else {
+                    zPos = -30 - 2;
+                }
+                GameObject obj5 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+                mapObjs.push_back(obj5);
+            }
+        }
+        for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
+            xPos = i;
+            if (i % 2 == 0) {
+                zPos = 0 + 2;
+            }
+            else {
+                zPos = 0 - 2;
+            }
+            GameObject obj6 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+            mapObjs.push_back(obj6);
+        }
+        for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= 3) {
+            zPos = i;
+            if (i % 2 == 0) {
+                xPos = 0 + 2;
+            }
+            else {
+                xPos = 0 - 2;
+            }
+            GameObject obj7 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+            mapObjs.push_back(obj7);
         }
 
         return mapObjs;
@@ -181,7 +215,7 @@ public:
 	double mouseXPrev = 0;
 	double mouseYPrev = 0;
 
-	vec3 playerPos; //player position, TODO replace with the one in player
+    vec3 playerPos;// = vec3(45, 0, -60); //player position, TODO replace with the one in player
 
 	const float PI = 3.14159;
 	GamePlayer *player = nullptr;
@@ -312,12 +346,12 @@ unsigned int createSky(string dir, vector<string> faces) {
 void initTex(const std::string& resourceDirectory)
 {
 	 vector<std::string> faces {
-			 "SkyMidNight_Right.png",
-			 "SkyMidNight_Left.png",
-			 "SkyMidNight_Top.png",
-			 "SkyMidNight_Bottom.png",
-			 "SkyMidNight_Front.png",
-			 "SkyMidNight_Back.png"
+			 "SkyEarlyDusk_Right.png",
+			 "SkyEarlyDusk_Left.png",
+			 "SkyEarlyDusk_Top.png",
+			 "SkyEarlyDusk_Bottom.png",
+			 "SkyEarlyDusk_Front.png",
+			 "SkyEarlyDusk_Back.png"
 	 };
 	 cubeMapTexture = createSky(resourceDirectory + "/",  faces);
 }
@@ -427,11 +461,17 @@ void initTex(const std::string& resourceDirectory)
 		cowShape->resize();
 		cowShape->init();
 
+
     // Initialize the obj mesh VBOs etc
     tree = make_shared<Shape>();
     tree->loadMesh(resourceDirectory + "/tree.obj");
     tree->resize();
     tree->init();
+
+    sphere = make_shared<Shape>();
+    sphere->loadMesh(resourceDirectory + "/sphere.obj");
+    sphere->resize();
+    sphere->init();
 
 		//initialize skybox
 		cube = make_shared<Shape>();
@@ -541,7 +581,7 @@ void initTex(const std::string& resourceDirectory)
         for (uint i = 0; i < mapObjs.size(); i++) {
             GameObject cur = mapObjs[i];
 
-            cur.draw(prog, Model);
+            cur.draw(prog, Model, 1);
         }
         Model->popMatrix();
 
@@ -556,6 +596,14 @@ void initTex(const std::string& resourceDirectory)
 			cur->update();
 			cur->draw(prog, Model);
 		}
+        
+        //UFO (Sphere for now, will change later)
+        Model->pushMatrix();
+            Model->translate(vec3(-20, 0, 20));
+            Model->scale(vec3(15, 15, 15));
+            glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+            sphere->draw(prog);
+        Model->popMatrix();
 
 		//ground
 		Model->pushMatrix();
