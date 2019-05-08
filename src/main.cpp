@@ -577,7 +577,7 @@ void initTex(const std::string& resourceDirectory)
         for (uint i = 0; i < mapObjs.size(); i++) {
             GameObject cur = mapObjs[i];
 
-            cur.draw(prog, Model);
+            cur.draw(prog, Model, 1);
         }
         Model->popMatrix();
 
