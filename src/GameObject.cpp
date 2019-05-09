@@ -89,4 +89,3 @@ void GameObject::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack
         shape->draw(prog);
     Model->popMatrix();
 }
-

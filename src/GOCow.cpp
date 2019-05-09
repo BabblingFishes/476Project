@@ -1,9 +1,12 @@
 #include "GOCow.h"
-
+#include <irrKlang.h>
 #define PI 3.14159
 
 using namespace std;
 using namespace glm;
+using namespace irrklang;
+ISoundEngine* SoundEngine = createIrrKlangDevice();
+
 
 // random constructor
 GOCow::GOCow(std::shared_ptr<Shape> shape, int worldSize) {
@@ -73,4 +76,5 @@ void GOCow::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Mod
 
 void GOCow::collect() {
   collected = true;
+  SoundEngine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg", GL_FALSE);
 }

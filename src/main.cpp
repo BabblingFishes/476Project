@@ -7,6 +7,8 @@ Winter 2017 - ZJW (Piddington texture write)
 2017 integration with pitch and yaw camera lab (set up for texture mapping lab)
 */
 
+#define _USE_MATH_DEFINES
+
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -79,21 +81,20 @@ public:
 	int randZPos; //= rand() % 20;
 	float randXDir;
 	float randZDir;// = ((float)rand() / (RAND_MAX)) + 1;
+	float randRot;
 
 	vector<GOCow> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GOCow> gameObjs;
 		for (int i = 0; i < NUMOBJS; i++) {
-			/*
 			randXPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
 			randZPos = (((float)rand() / (RAND_MAX)) * WORLD_SIZE * 2) - WORLD_SIZE;
-			randRot = (((float)rand() / (RAND_MAX)) * pi);
+			randRot = (((float)rand() / (RAND_MAX)) * M_PI);
 			GOCow obj = GOCow(shape,
 				2.0, //radius
 				vec3(randXPos, 0, randZPos),
 				vec3(0, randRot, 0),
 				vec3(1, 1, 1),
 				vec3(1, 0, 1));
-				*/
 			gameObjs.push_back(GOCow(shape, WORLD_SIZE));
 		}
 
