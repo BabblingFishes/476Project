@@ -30,6 +30,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GameObject.h"
 #include "GamePlayer.h"
 #include "GOCow.h"
+#include <irrKlang.h>
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -49,6 +50,7 @@ Winter 2017 - ZJW (Piddington texture write)
 using namespace std;
 using namespace glm;
 using namespace std::chrono;
+using namespace irrklang;
 
 class Application : public EventCallbacks {
 public:
@@ -614,6 +616,7 @@ void initTex(const std::string& resourceDirectory)
 
 		//player model
 		player->draw(prog, oModel);
+
 	}
 
 	void render()
@@ -741,6 +744,11 @@ void initTex(const std::string& resourceDirectory)
 
 int main(int argc, char **argv)
 {
+	ISoundEngine* SoundEngine = createIrrKlangDevice();
+	if (!SoundEngine)
+		return 0;
+
+	SoundEngine->play2D("../resources/Night.mp3", GL_TRUE);
 	//set seed for rand operations
 	srand(time(0));
 
