@@ -94,7 +94,7 @@ public:
 				vec3(1, 1, 1),
 				vec3(1, 0, 1));
 				*/
-			gameObjs.push_back(GOCow(shape, WORLD_SIZE));
+			gameObjs.push_back(GOCow(shape, WORLD_SIZE - 40));
 		}
 
 		return gameObjs;
@@ -172,7 +172,7 @@ public:
         return mapObjs;
     }
 
-  vector<GameObject> mapObjs;
+    vector<GameObject> mapObjs;
 	vector<GOCow> gameObjs;
 
 	WindowManager * windowManager = nullptr;
@@ -219,6 +219,11 @@ public:
 
 	const float PI = 3.14159;
 	GamePlayer *player = nullptr;
+    
+    //Mothership
+    float MSrad = 13; //rough estimate based on trees
+    vec3 MSpos = vec3(-20, 0, 20);
+    int numCollected = 0;
 
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 
@@ -588,18 +593,21 @@ void initTex(const std::string& resourceDirectory)
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
 			GOCow *cur = &(gameObjs[i]);
+            cur->collect(MSpos, MSrad, numCollected);
 			//cur.isColliding(gameObjs, player);
 			if (cur->isColliding(player)) {
 				cur->collide(player);
 				player->collide(cur);
 			}
-			cur->update();
+            if (!cur->isCollected()) {
+                cur->update();
+            }
 			cur->draw(prog, Model);
 		}
         
-        //UFO (Sphere for now, will change later)
+        //Mothership (Sphere for now, will change later)
         Model->pushMatrix();
-            Model->translate(vec3(-20, 0, 20));
+            Model->translate(MSpos);
             Model->scale(vec3(15, 15, 15));
             glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
             sphere->draw(prog);

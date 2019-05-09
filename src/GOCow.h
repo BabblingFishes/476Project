@@ -29,13 +29,13 @@ public:
 
   //specific constructor
   GOCow(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
-
+    
   bool isCollected();
 
   void update();
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
-  void collect();
+  void collect(vec3 MSpos, float MSrad, int &numCollected);
 };
 
 #endif
