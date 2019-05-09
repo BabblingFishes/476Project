@@ -5,11 +5,11 @@
 #include <glad/glad.h>
 #include <string>
 
-class Texture
+class gTexture
 {
 public:
-	Texture();
-	virtual ~Texture();
+	gTexture();
+	virtual ~gTexture();
 	void setFilename(const std::string &f) { filename = f; }
 	void init();
 	void setUnit(GLint u) { unit = u; }

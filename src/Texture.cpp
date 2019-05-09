@@ -9,19 +9,19 @@
 
 using namespace std;
 
-Texture::Texture() :
+gTexture::gTexture() :
 	filename(""),
 	tid(0)
 {
 
 }
 
-Texture::~Texture()
+gTexture::~gTexture()
 {
 
 }
 
-void Texture::init()
+void gTexture::init()
 {
 	// Load texture
 	int w, h, ncomps;
@@ -60,7 +60,7 @@ void Texture::init()
 	stbi_image_free(data);
 }
 
-void Texture::setWrapModes(GLint wrapS, GLint wrapT)
+void gTexture::setWrapModes(GLint wrapS, GLint wrapT)
 {
 	// Must be called after init()
 	glBindTexture(GL_TEXTURE_2D, tid);
@@ -68,14 +68,14 @@ void Texture::setWrapModes(GLint wrapS, GLint wrapT)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
 }
 
-void Texture::bind(GLint handle)
+void gTexture::bind(GLint handle)
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, tid);
 	glUniform1i(handle, unit);
 }
 
-void Texture::unbind()
+void gTexture::unbind()
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, 0);

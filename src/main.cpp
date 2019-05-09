@@ -67,7 +67,6 @@ public:
 	shared_ptr<Shape> cowShape;
 	shared_ptr<Shape> playerShape;
 	shared_ptr<Shape> cube;
-	//Model cube;
 	shared_ptr<Shape> tree;
 	shared_ptr<Shape> sphere;
   
@@ -78,9 +77,6 @@ public:
 	int randZPos; //= rand() % 20;
 	float randXDir;
 	float randZDir;// = ((float)rand() / (RAND_MAX)) + 1;
-
-
-
 
 	vector<GOCow> generateObjs(std::shared_ptr<Shape> shape) {
 		vector<GOCow> gameObjs;
@@ -476,7 +472,6 @@ void initTex(const std::string& resourceDirectory)
     sphere->init();
 
 		//initialize skybox
-		//Model cube(resourceDirectory + "/cube.obj");
 		cube = make_shared<Shape>();
 		cube->loadMesh(resourceDirectory + "/cube.obj");
 		cube->resize();
@@ -570,23 +565,23 @@ void initTex(const std::string& resourceDirectory)
 		texProg->unbind();
 	}
 
-	void renderScene(shared_ptr<MatrixStack> View, shared_ptr<MatrixStack> Model) {
+	void renderScene(shared_ptr<MatrixStack> View, shared_ptr<MatrixStack> oModel) {
 		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
 
-		Model->loadIdentity();
+		oModel->loadIdentity();
 		//Model->rotate(radians(cTheta), vec3(0, 1, 0));
 
 		//float dt = difftime(startTime, endTime);
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		//double dt = time_span.count();
 
-        Model->pushMatrix();
+        oModel->pushMatrix();
         for (uint i = 0; i < mapObjs.size(); i++) {
             GameObject cur = mapObjs[i];
 
-            cur.draw(prog, Model, 1);
+            cur.draw(prog, oModel, 1);
         }
-        Model->popMatrix();
+        oModel->popMatrix();
 
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
@@ -597,30 +592,28 @@ void initTex(const std::string& resourceDirectory)
 				player->collide(cur);
 			}
 			cur->update();
-			cur->draw(prog, Model);
+			cur->draw(prog, oModel);
 		}
         
         //UFO (Sphere for now, will change later)
-        Model->pushMatrix();
-            Model->translate(vec3(-20, 0, 20));
-            Model->scale(vec3(15, 15, 15));
-            glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+        oModel->pushMatrix();
+            oModel->translate(vec3(-20, 0, 20));
+            oModel->scale(vec3(15, 15, 15));
+            glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(oModel->topMatrix()));
             sphere->draw(prog);
-        Model->popMatrix();
+        oModel->popMatrix();
 
 		//ground
-		Model->pushMatrix();
-		Model->translate(vec3(0, -1, 0));
-		Model->scale(vec3(WORLD_SIZE, 0, WORLD_SIZE));
+		oModel->pushMatrix();
+		oModel->translate(vec3(0, -1, 0));
+		oModel->scale(vec3(WORLD_SIZE, 0, WORLD_SIZE));
 		SetMaterial(4);
-		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-		Shader ourShader("../resources/model_vert.glsl", "../resources/modelfrag.glsl");
-		//cube.Draw(ourShader)
+		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(oModel->topMatrix()));
 		cube->draw(prog);
-		Model->popMatrix();
+		oModel->popMatrix();
 
 		//player model
-		player->draw(prog, Model);
+		player->draw(prog, oModel);
 	}
 
 	void render()

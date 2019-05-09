@@ -18,8 +18,8 @@
 
 namespace GLTextureWriter
 {
-	bool WriteImage(std::shared_ptr<Texture> texture, std::string fileName);
-	bool WriteImage(const Texture & texture, std::string fileName);
+	bool WriteImage(std::shared_ptr<gTexture> texture, std::string fileName);
+	bool WriteImage(const gTexture & texture, std::string fileName);
 	bool WriteImage(GLint textureHandle, std::string fileName);
 }
 
