@@ -93,8 +93,9 @@ void GamePlayer::update(shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *ar
 }
 
 void GamePlayer::collide(GOCow *cow) {
-  if(!cow->isCollected())
-  beamIn(cow);
+    if(!cow->isCollected()) {
+        beamIn(cow);
+    }
 }
 
 //moves an object towards the gravitation beam
