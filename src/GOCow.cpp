@@ -1,12 +1,12 @@
 #include "GOCow.h"
-#include <irrKlang.h>
+#include <irrklang/irrKlang.h>
 #define PI 3.14159
 
 using namespace std;
 using namespace glm;
 using namespace irrklang;
-ISoundEngine* SoundEngine = createIrrKlangDevice();
 
+ISoundEngine* SoundEngine = createIrrKlangDevice();
 
 // random constructor
 GOCow::GOCow(std::shared_ptr<Shape> shape, int worldSize) {

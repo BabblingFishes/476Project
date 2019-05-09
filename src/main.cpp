@@ -32,13 +32,13 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GameObject.h"
 #include "GamePlayer.h"
 #include "GOCow.h"
-#include <irrKlang.h>
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <irrklang/irrKlang.h>
 
 #define NUMOBJS 11
 #define START_VELOCITY 0.0
@@ -636,7 +636,7 @@ void initTex(const std::string& resourceDirectory)
 		// Create the matrix stacks
 		auto Projection = make_shared<MatrixStack>();
 		auto View = make_shared<MatrixStack>();
-		auto Model = make_shared<MatrixStack>();
+		auto gModel = make_shared<MatrixStack>();
 		// Apply perspective projection.
 		Projection->pushMatrix();
 		Projection->perspective(45.0f, aspect, 0.01f, WORLD_SIZE * 5);
@@ -657,14 +657,14 @@ void initTex(const std::string& resourceDirectory)
 		t1 = high_resolution_clock::now();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuf[0]);
-		Model->pushMatrix();
-			renderScene(View, Model); //note: this was previously FBOView
-		Model->popMatrix();
+		gModel->pushMatrix();
+			renderScene(View, gModel); //note: this was previously FBOView
+		gModel->popMatrix();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		Model->pushMatrix();
-			renderScene(View, Model);
-		Model->popMatrix();
+		gModel->pushMatrix();
+			renderScene(View, gModel);
+		gModel->popMatrix();
 
 		//time(&endTime);
 		t2 = high_resolution_clock::now();
@@ -676,16 +676,16 @@ void initTex(const std::string& resourceDirectory)
 		glUniformMatrix4fv(skyProg->getUniform("V"), 1, GL_FALSE,value_ptr(View->topMatrix()));
 		mat4 ident(1.0);
 		glDepthFunc(GL_LEQUAL);
-		Model->pushMatrix();
-				Model->loadIdentity();
-				Model->rotate(radians(cTheta), vec3(0, 1, 0));
-				Model->translate(vec3(0, 6.0, 0));
-				Model->scale(WORLD_SIZE*2);
-				glUniformMatrix4fv(skyProg->getUniform("M"), 1, GL_FALSE,value_ptr(Model->topMatrix()) );
+		gModel->pushMatrix();
+				gModel->loadIdentity();
+				gModel->rotate(radians(cTheta), vec3(0, 1, 0));
+				gModel->translate(vec3(0, 6.0, 0));
+				gModel->scale(WORLD_SIZE*2);
+				glUniformMatrix4fv(skyProg->getUniform("M"), 1, GL_FALSE,value_ptr(gModel->topMatrix()) );
 				glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
 				skybox->draw(texProg);
 		glDepthFunc(GL_LESS);
-		Model->popMatrix();
+		gModel->popMatrix();
 		skyProg->unbind();
 
 		texProg->bind();
