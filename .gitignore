@@ -2,12 +2,14 @@
 build/*
 CMakeFiles/*
 *.cmake
+CMakeLists.txt
 
 # visual studio trash #
 .vs/*
 Debug/*
 HolyCow.dir/*
 Win32/*
+x64/*
 *.vcxproj
 *.filters
 *.sln

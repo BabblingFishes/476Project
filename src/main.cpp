@@ -9,16 +9,17 @@ Winter 2017 - ZJW (Piddington texture write)
 
 #include <iostream>
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <time.h>
 #include <stdlib.h>
 #include <chrono>
 #include <ctime>
 #include <ratio>
 
-//#include "math.h"
-//#define GLM_ENABLE_EXPERIMENTAL
 #include "stb_image.h"
 
+#include "Shader.h"
+#include "Model.h"
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -66,8 +67,9 @@ public:
 	shared_ptr<Shape> cowShape;
 	shared_ptr<Shape> playerShape;
 	shared_ptr<Shape> cube;
-  shared_ptr<Shape> tree;
-  shared_ptr<Shape> sphere;
+	//Model cube;
+	shared_ptr<Shape> tree;
+	shared_ptr<Shape> sphere;
   
 	shared_ptr<SkyBox> skybox;
 
@@ -474,6 +476,7 @@ void initTex(const std::string& resourceDirectory)
     sphere->init();
 
 		//initialize skybox
+		//Model cube(resourceDirectory + "/cube.obj");
 		cube = make_shared<Shape>();
 		cube->loadMesh(resourceDirectory + "/cube.obj");
 		cube->resize();
@@ -611,6 +614,8 @@ void initTex(const std::string& resourceDirectory)
 		Model->scale(vec3(WORLD_SIZE, 0, WORLD_SIZE));
 		SetMaterial(4);
 		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+		Shader ourShader("../resources/model_vert.glsl", "../resources/modelfrag.glsl");
+		//cube.Draw(ourShader)
 		cube->draw(prog);
 		Model->popMatrix();
 
