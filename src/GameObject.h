@@ -8,6 +8,8 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
+#include "Texture.h"
+#include "Material.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -17,7 +19,9 @@ using namespace glm;
 
 class GameObject {
 protected:
-  shared_ptr<Shape> shape;
+  Shape *shape;
+  Texture *texture;
+  Material *material;
   float radius;
   float mass;
   vec3 position;
@@ -28,9 +32,10 @@ protected:
 
 public:
   GameObject();
-  
-  GameObject(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
+  GameObject(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
+
+  Texture *getTexture();
   float getRadius();
   float getMass();
   vec3 getPos();
@@ -44,8 +49,8 @@ public:
   void setScale(vec3 scale);
   void setVel(vec3 velocity);
 
-  bool isColliding(vec3 point);
-  bool isColliding(GameObject *other);
+  virtual bool isColliding(vec3 point);
+  virtual bool isColliding(GameObject *other);
 
   void addForce(vec3 force);
 

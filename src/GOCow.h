@@ -8,6 +8,8 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
+#include "Texture.h"
+#include "Material.h"
 #include "GameObject.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -25,10 +27,10 @@ private:
 
 public:
   //random constructor
-  GOCow(std::shared_ptr<Shape> shape, int worldSize);
+  GOCow(Shape *shape, Texture *texture, int worldSize);
 
   //specific constructor
-  GOCow(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
+  GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
   bool isCollected();
 

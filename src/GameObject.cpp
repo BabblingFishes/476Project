@@ -5,8 +5,9 @@ using namespace glm;
 
 GameObject::GameObject(){}
 
-GameObject::GameObject(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
+GameObject::GameObject(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
   this->shape = shape;
+  this->texture = texture;
   this->radius = radius;
   this->position = position;
   this->rotation = rotation;
@@ -14,8 +15,14 @@ GameObject::GameObject(shared_ptr<Shape> shape, float radius, vec3 position, vec
   this->velocity = velocity;
   mass = 1; //TODO
   netForce = vec3(0.0f);
+  material = new Material(
+    vec3(0.1745, 0.01175, 0.01175), //amb
+    vec3(0.61424, 0.04136, 0.04136), //dif
+    vec3(0.0727811, 0.0626959, 0.0626959), //matSpec
+    27.90); //shine
 }
 
+Texture *GameObject::getTexture() { return texture; }
 float GameObject::getRadius() { return radius; }
 float GameObject::getMass() { return mass; }
 vec3 GameObject::getPos() { return position; }
@@ -67,17 +74,23 @@ void GameObject::collide(GameObject *other) {
   return;
 }
 
-void GameObject::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model) {
+void GameObject::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
     Model->translate(position);
     Model->rotate(rotation.x, vec3(1, 0, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->rotate(rotation.y, vec3(0, 1, 0));
+    Model->scale(scale);
     //TODO set material here
-    glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
-    glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
-    glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
-    glUniform1f(prog->getUniform("shine"), 120.0);
+    if (material) {
+      material->draw(prog);
+    }
+    else {
+      glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
+      glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
+      glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
+      glUniform1f(prog->getUniform("shine"), 120.0);
+    }
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);
   Model->popMatrix();
