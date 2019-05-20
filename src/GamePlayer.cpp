@@ -101,8 +101,9 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown) {
 }
 
 void GamePlayer::collide(GOCow *cow) {
-  if(!cow->isCollected())
-  beamIn(cow);
+    if(!cow->isCollected()) {
+        beamIn(cow);
+    }
 }
 
 //moves an object towards the gravitation beam

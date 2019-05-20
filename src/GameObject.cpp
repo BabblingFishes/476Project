@@ -76,12 +76,12 @@ void GameObject::collide(GameObject *other) {
 
 void GameObject::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
+    //TODO for trees: Model->translate(vec3(0, 4, 0));
     Model->translate(position);
     Model->rotate(rotation.x, vec3(1, 0, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->rotate(rotation.y, vec3(0, 1, 0));
     Model->scale(scale);
-    //TODO set material here
     if (material) {
       material->draw(prog);
     }
@@ -92,3 +92,4 @@ void GameObject::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     shape->draw(prog);
   Model->popMatrix();
 }
+
