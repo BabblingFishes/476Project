@@ -11,6 +11,7 @@
 #include "Texture.h"
 #include "Material.h"
 #include "GameObject.h"
+#include "GOCow.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -24,11 +25,12 @@ using namespace glm;
 class GOMothership : public GameObject {
 private:
   int cowsCollected;
+  int maxCows;
 
 public:
-  GOMothership(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale);
+  GOMothership(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, int maxCows);
 
-  void collide();
+  void collect(GOCow *cow);
 };
 
 #endif

@@ -42,12 +42,9 @@ Winter 2017 - ZJW (Piddington texture write)
 
 #define DEBUG_MODE true
 #define NUMOBJS 11
-#define START_VELOCITY 0.0
-#define PLAYER_VELOCITY .2
-#define PLAYER_RADIUS 1.0
 #define WORLD_SIZE 100
-#define MAP_WIDTH 40
-#define MAP_LENGTH 60
+#define MAP_WIDTH 120
+#define MAP_LENGTH 162
 
 using namespace std;
 using namespace glm;
@@ -108,6 +105,7 @@ public:
 
 	bool wasdIsDown[4] = { false };
 	bool arrowIsDown[4] = { false };
+	int displayMode = 0;
 
 	GamePlayer *player = nullptr;
 	Ground *ground;
@@ -122,8 +120,8 @@ public:
 	void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
 
 		if (action == GLFW_PRESS || action == GLFW_RELEASE) {
-			// movement
   		switch (key) {
+			// WASD movement controls
   		case GLFW_KEY_W:
   			wasdIsDown[0] = action == GLFW_PRESS;
   			break;
@@ -136,6 +134,7 @@ public:
   		case GLFW_KEY_A:
   			wasdIsDown[3] = action == GLFW_PRESS;
   			break;
+			// Arrow camera controls
 			case GLFW_KEY_UP:
   			arrowIsDown[0] = action == GLFW_PRESS;
   			break;
@@ -155,11 +154,22 @@ public:
   			case GLFW_KEY_ESCAPE:
   				glfwSetWindowShouldClose(window, GL_TRUE);
   				break;
-        case GLFW_KEY_B: //display normally
-  				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  				break;
-        case GLFW_KEY_N: //display wireframe
-  				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				//switches between drawing solids, wireframes, and points for debugging
+        case GLFW_KEY_M:
+					if(DEBUG_MODE){
+						displayMode = (displayMode + 1) % 3;
+						switch (displayMode) {
+						case 0:
+							glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+							break;
+						case 1:
+							glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+							break;
+						case 2:
+							glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+							break;
+						}
+					}
   				break;
   			}
       }
@@ -247,6 +257,10 @@ public:
 		depthProg->addAttribute("vertPos");
 		depthProg->addAttribute("vertNor"); //req'd by shape
 		depthProg->addAttribute("vertTex"); //req'd by shape
+		depthProg->addUniform("matAmb"); //red'd by objects
+		depthProg->addUniform("matDif"); //red'd by objects
+		depthProg->addUniform("matSpec"); //red'd by objects
+		depthProg->addUniform("shine"); //red'd by objects
 
 
 		shadowProg = make_shared<Program>();
@@ -265,6 +279,7 @@ public:
 		shadowProg->addUniform("matSpec");
 		shadowProg->addUniform("shine");
 		shadowProg->addUniform("LS");
+		shadowProg->addUniform("camPos");
 		shadowProg->addUniform("lightPos");
 		shadowProg->addUniform("lightClr");
 		shadowProg->addAttribute("vertPos");
@@ -384,21 +399,20 @@ public:
 
 		//TODO replace below defaultTex with textures
 		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15));
+		player = new GamePlayer(playerShape, defaultTex, vec3(10.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
+		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
 		initQuad(); //quad for VBO
 	}
 
-
+	// makes cows and places them randomly in the world
 	vector<GOCow> generateCows(Shape *shape, Texture *texture) {
-		vector<GOCow> gameObjs;
+		vector<GOCow> cows;
 		for (int i = 0; i < NUMOBJS; i++) {
-			gameObjs.push_back(GOCow(shape, texture, WORLD_SIZE));
+			cows.push_back(GOCow(shape, texture, WORLD_SIZE - 40));
 		}
-
-		return gameObjs;
+		return cows;
 	}
 
 
@@ -406,35 +420,71 @@ public:
     vector<GameObject> mapObjs;
     int xPos, zPos;
 
-    for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 5) {
+    for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 4) {
       if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj2);
       }
       else {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj2);
 
         xPos = i;
         zPos = -MAP_LENGTH / 2;
-        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj3);
 
         zPos = MAP_LENGTH / 2;
-        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(1.f), vec3(0));
+        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj4);
       }
     }
+		//Tree lines within border. Each for loop is a line
+        for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
+          if (i > -20 || i < -40) {
+            xPos = i;
+            if (i % 2 == 0) {
+                zPos = -30 + 2;
+            }
+            else {
+                zPos = -30 - 2;
+            }
+            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+            mapObjs.push_back(obj5);
+          }
+        }
+        for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
+          xPos = i;
+          if (i % 2 == 0) {
+              zPos = 0 + 2;
+          }
+          else {
+              zPos = 0 - 2;
+          }
+          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          mapObjs.push_back(obj6);
+        }
+        for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= 3) {
+          zPos = i;
+          if (i % 2 == 0) {
+              xPos = 0 + 2;
+          }
+          else {
+              xPos = 0 - 2;
+          }
+          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          mapObjs.push_back(obj7);
+      }
 
     return mapObjs;
   }
@@ -499,7 +549,10 @@ public:
 		for (cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
 			//TODO mothership collision
 			if (!cur->isCollected()) {
-				if (cur->isColliding(player)) {
+				if (cur->isColliding(mothership)) {
+					mothership->collect(&*cur);
+				}
+				else if (cur->isColliding(player)) {
 					cur->collide(player);
 					player->collide(&*cur);
 				}
@@ -531,7 +584,9 @@ public:
 
 /* V - camera view */
   void setView(shared_ptr<Program> curProg) {
-  	mat4 View = glm::lookAt(player->getCamPos(), player->getPos(), vec3(0, 1, 0));
+		vec3 camPos = player->getCamPos();
+		glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
+  	mat4 View = glm::lookAt(camPos, player->getPos(), vec3(0, 1, 0));
   	glUniformMatrix4fv(curProg->getUniform("V"), 1, GL_FALSE, value_ptr(View));
   }
 
@@ -539,13 +594,13 @@ public:
 	void setSkyBoxView(shared_ptr<Program> curProg) {
 		mat4 View = mat4(1.f);
 		View *= glm::rotate(mat4(1.0), player->getCamPhi(), vec3(1, 0, 0));
-		View *= glm::rotate(mat4(1.0), player->getCamTheta(), vec3(0, 1, 0));
+		View *= glm::rotate(mat4(1.0), player->getCamTheta(), vec3(0, -1, 0));
 		glUniformMatrix4fv(curProg->getUniform("V"), 1, GL_FALSE, value_ptr(View));
 	}
 
 /* lightV - view for light */
-  mat4 setLightView(shared_ptr<Program> curProg, vec3 lightPos, vec3 lightDir, vec3 up) {
-  	mat4 Cam = lookAt(lightPos, lightDir, up);
+  mat4 setLightView(shared_ptr<Program> curProg, vec3 lightPos, vec3 lightAim, vec3 up) {
+  	mat4 Cam = lookAt(lightPos, lightAim, up);
 		glUniformMatrix4fv(curProg->getUniform("LV"), 1, GL_FALSE, value_ptr(Cam));
 		return Cam;
   }
@@ -598,6 +653,11 @@ public:
 
 	//TODO you deleted this code, dumbass. Put it back.
 	void renderSkyBox() {
+		int width, height;
+		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+		glViewport(0, 0, width, height); //view to window size
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear framebuffer
+
 		skyProg->bind();
 		setProjectionMatrix(skyProg);
 		setSkyBoxView(skyProg);
@@ -616,14 +676,14 @@ public:
 		//depth map setup
 		glViewport(0, 0, SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glCullFace(GL_FRONT);
 
 		//set up shadow shader
 		//render scene
 		depthProg->bind();
 		lightP = setOrthoMatrix(depthProg);
-		lightV = setLightView(depthProg, player->getPos(), player->getPos() - vec3(0, 1, 0), vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
+		lightV = setLightView(depthProg, player->getPos() + vec3(0, 10, 0), player->getPos() - vec3(0, 1, 0), vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
 		drawScene(depthProg, 0);
 		depthProg->unbind();
 
@@ -636,7 +696,7 @@ public:
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		glViewport(0, 0, width, height); //view to window size
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear framebuffer
+		glClear(GL_DEPTH_BUFFER_BIT); //clear framebuffer
 
 		//set up shadow shader
 		shadowProg->bind();
@@ -659,8 +719,8 @@ public:
 	}
 
 	void render() {
-		//renderSkyBox();
-		//if (shadowsEnabled) renderShadowDepth();
+		if (shadowsEnabled) renderShadowDepth();
+		renderSkyBox();
 		renderScene();
 	}
 };

@@ -86,10 +86,7 @@ void GameObject::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
       material->draw(prog);
     }
     else {
-      glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
-      glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
-      glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
-      glUniform1f(prog->getUniform("shine"), 120.0);
+      cerr << "Object missing material!" << endl;
     }
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);

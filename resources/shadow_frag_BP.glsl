@@ -9,7 +9,8 @@ in vec3 lightDir;
 in vec4 fPos;
 in vec2 vTexCoord;
 in vec4 fPosLS;
-in vec4 vColor;
+
+in vec3 vColor;
 
 out vec4 color;
 
@@ -31,7 +32,6 @@ float testShadow(vec4 LSfPos) {
 }
 
 void main() {
-		vec4 baseColor = vColor;
 		vec4 texColor0 = texture(Texture0, vTexCoord);
 		float shade = testShadow(fPosLS);
 
@@ -43,13 +43,14 @@ void main() {
     vec3 L_norm = normalize(vec3(lightDir));
 
     vec3 diffuseRefl = matDif * max(0, dot(normal, L_norm));
-    vec3 specularRefl = matSpec * pow(max(dot(normal, half_norm), 0.0), shine);
+    //vec3 specularRefl = matSpec * pow(max(dot(normal, half_norm), 0.0), shine);
+    vec3 specularRefl = matSpec * pow(max(dot(half_norm, normal), 0.0), shine);
     vec3 ambientRefl = matAmb;
 
     vec3 ReflColor = (ambientRefl + diffuseRefl + specularRefl) * lightClr / fallOff;
 
-		color = texColor0 * (vec4(ReflColor, 1.0) + (1.0 - shade) * baseColor);
-
+    //color = amb*(texColor0) + (1.0-Shade)*texColor0*BaseColor;
+		//color = 0.3 * (texColor0) + (1.0 - shade) * texColor0 * vec4(vColor, 1.0);
 		//TODO currently just showing blinn-phong
 		color = vec4(ReflColor, 1.0);
 

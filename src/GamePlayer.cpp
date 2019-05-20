@@ -25,7 +25,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   shipRadius = 1;
   camPhi = rotation.x;
   camTheta = rotation.y;
-  camZoom = -10;
+  camZoom = 10;
   positionCamera();
 }
 
@@ -34,9 +34,9 @@ float GamePlayer::getCamPhi() { return camPhi; }
 float GamePlayer::getCamTheta() { return camTheta; }
 
 void GamePlayer::positionCamera() {
-  vec3 cameraForward = vec3(cos(camPhi) * -sin(camTheta),
-                            sin(camPhi),
-                            cos(camPhi) * -cos(camTheta));
+  vec3 cameraForward = vec3(cos(camPhi) * sin(camTheta),
+                            -sin(camPhi),
+                            cos(camPhi) * cos(camTheta));
   camPosition = position - (cameraForward * camZoom);
 }
 
@@ -74,24 +74,24 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown) {
   rotation += vec3(0, rotSpeed, 0);
 
   // camera rotation
-  if (arrowIsDown[0]) camPhi =  std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+  if (arrowIsDown[0]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
   if (arrowIsDown[1]) camTheta -= cameraSpeed;
-  if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+  if (arrowIsDown[2]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
   if (arrowIsDown[3]) camTheta += cameraSpeed;
 
   //player orientation
-  vec3 playerForward = normalize(vec3(-sin(camTheta),
+  vec3 playerForward = normalize(vec3(sin(camTheta),
                             0,
-                            -cos(camTheta)));
-  vec3 playerLeft = normalize(cross(playerForward, vec3(0, 1, 0)));
+                            cos(camTheta)));
+  vec3 playerLeft = normalize(cross(vec3(0, 1, 0), playerForward));
 
   vec3 zForce = playerForward * moveMagn;
   vec3 xForce = playerLeft * moveMagn;
 
   //player controls
-  if (wasdIsDown[0]) netForce -= zForce;
+  if (wasdIsDown[0]) netForce += zForce;
   if (wasdIsDown[1]) netForce -= xForce;
-  if (wasdIsDown[2]) netForce += zForce;
+  if (wasdIsDown[2]) netForce -= zForce;
   if (wasdIsDown[3]) netForce += xForce;
 
   move();
