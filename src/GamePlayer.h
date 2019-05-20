@@ -8,6 +8,8 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
+#include "Texture.h"
+#include "Material.h"
 #include "GameObject.h"
 #include "GOCow.h"
 
@@ -31,9 +33,13 @@ private:
   void positionCamera();
 
 public:
-  GamePlayer(shared_ptr<Shape> shape, vec3 position, vec3 rotation, vec3 scale);
+  GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale);
 
-  void update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown);
+  vec3 getCamPos();
+  float getCamPhi();
+  float getCamTheta();
+
+  void update(bool *wasdIsDown, bool *arrowIsDown);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 
