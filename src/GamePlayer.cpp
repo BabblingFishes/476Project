@@ -65,9 +65,9 @@ void GamePlayer::update(shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *ar
   rotation += vec3(0, rotSpeed, 0);
 
   // camera rotation
-  if (arrowIsDown[0]) camPhi = max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+  if (arrowIsDown[0]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
   if (arrowIsDown[1]) camTheta -= cameraSpeed;
-  if (arrowIsDown[2]) camPhi = min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+  if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
   if (arrowIsDown[3]) camTheta += cameraSpeed;
 
   //player orientation
@@ -104,7 +104,7 @@ void GamePlayer::beamIn(GameObject *other) {
   vec3 dir = position - other->getPos();
   //TODO str / distance
   float dist = length(dir);
-  vec3 force = normalize(dir) * (float)(beamStrength / max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
+  vec3 force = normalize(dir) * (float)(beamStrength / std::max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
   other->addForce(force);
 
   //this...is very broken
