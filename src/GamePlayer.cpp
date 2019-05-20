@@ -74,9 +74,9 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown) {
   rotation += vec3(0, rotSpeed, 0);
 
   // camera rotation
-  if (arrowIsDown[0]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+  if (arrowIsDown[0]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
   if (arrowIsDown[1]) camTheta -= cameraSpeed;
-  if (arrowIsDown[2]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+  if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
   if (arrowIsDown[3]) camTheta += cameraSpeed;
 
   //player orientation

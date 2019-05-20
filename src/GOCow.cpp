@@ -29,7 +29,6 @@ GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
   scale = vec3(0.5);
   velocity = vec3(0.0);
   collected = false;
-  vec3 prevPos = vec3(0,0,0);
 }
 
 // specific constructor
@@ -44,7 +43,6 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
   this->velocity = velocity;
   mass = 1; //TODO
   collected = false;
-  vec3 prevPos = vec3(0,0,0);
 }
 
 /*bool GOCow::checkInGoal(vec3 MSpos, float MSrad) {
@@ -61,7 +59,6 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
 bool GOCow::isCollected()   {   return collected;   }
 
 void GOCow::update() {
-  //prevPos = position;
   float moveMagn = 0.0001f; //walkin' power
   if(position.y == 0) { //if on the ground
     //move in the direction of the rotation
@@ -91,18 +88,6 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->popMatrix();
 }
 
-void GOCow::collect(vec3 MSpos, float MSrad, int &numCollected) {
-    if (length(MSpos - position) < MSrad) {
-        /*if (prevPos != position) {
-            numCollected++;
-            if (numCollected == 11) {
-                cout << "Mission Accomplished! You've colleced all of the cows!" << endl;
-            }
-            else {
-                cout << "Number of Cows Collected:" << numCollected << endl;
-            }
-        }*/
-        collected = true;
-    }
+void GOCow::collect() {
+  collected = true;
 }
-

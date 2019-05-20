@@ -58,8 +58,7 @@ public:
   virtual void move();
   virtual void collide(GameObject *other);
 
-  virtual void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model, int isTree);
-
+  virtual void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
 };
 
