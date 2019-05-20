@@ -61,14 +61,14 @@ void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
 /* moves the player and camera */
 //TODO this needs to be done real-time
 //TODO the View logic can probably be abstracted out
-void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown) {
+void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
   //TODO after implementing real-time, make these values constants
   float moveMagn = 0.01f; //force from player controls
   //float mass = 1; // player mass
-  float rotSpeed = 0.1f; // UFO spin speed
+  float rotSpeed = 0.1f * timeScale; // UFO spin speed
 
   //TODO drift camera too? or is that bad for motion sickness
-  float cameraSpeed = 0.02f; //camera rotation acceleration
+  float cameraSpeed = 0.02f * timeScale; //camera rotation acceleration
 
   //spin UFO
   rotation += vec3(0, rotSpeed, 0);
@@ -94,7 +94,7 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown) {
   if (wasdIsDown[2]) netForce -= zForce;
   if (wasdIsDown[3]) netForce += xForce;
 
-  move();
+  move(timeScale);
 
   // place the camera,pointed at the player
   positionCamera();

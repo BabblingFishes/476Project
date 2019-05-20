@@ -68,12 +68,6 @@ public:
 	const GLuint SHADOWMAP_WIDTH = 1024, SHADOWMAP_HEIGHT = 1024;
 	GLuint depthMap;
 
-	//timers for time based movement
-	time_t startTime;
-	time_t endTime;
-	high_resolution_clock::time_point t1;
-	high_resolution_clock::time_point t2;
-
 	// Shape to be used (from obj file)
 	Shape *cowShape;
 	Shape *playerShape;
@@ -542,8 +536,8 @@ public:
 
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
-	void update() {
-		player->update(wasdIsDown, arrowIsDown);
+	void update(double timeScale) {
+		player->update(wasdIsDown, arrowIsDown, timeScale);
 
 		vector<GOCow>::iterator cur;
 		for (cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
@@ -556,7 +550,7 @@ public:
 					cur->collide(player);
 					player->collide(&*cur);
 				}
-				cur->update();
+				cur->update(timeScale);
 			}
 		}
 	}
@@ -748,10 +742,19 @@ int main(int argc, char **argv) {
 	application->initTex(resourceDir);
 	application->initGeom(resourceDir);
 
+	float timeScale;
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
+
+		/*high_resolution_clock::time_point t1;
+		high_resolution_clock::time_point t2;
+		t1 = high_resolution_clock::now();
+		printf(t1);*/
+
+		auto start = std::chrono::steady_clock::now();
+
 		// update game state
-		application->update();
+		application->update(timeScale);
 		// render game
 		application->render();
 
@@ -759,6 +762,12 @@ int main(int argc, char **argv) {
 		glfwSwapBuffers(windowManager->getHandle());
 		// Poll for and process events.
 		glfwPollEvents();
+
+		auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start);
+		timeScale = elapsed.count() / (10e+9);
+		timeScale *= 500; //TODO this is adjusting to fish's crap speed, but we can just adjust other variables instead
+
+		//cout << timeScale << endl; //DEBUG
 	}
 
 	// Quit program.
