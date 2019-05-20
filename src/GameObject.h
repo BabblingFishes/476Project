@@ -54,8 +54,8 @@ public:
 
   void addForce(vec3 force);
 
-  virtual void update();
-  virtual void move();
+  virtual void update(float timeScale);
+  virtual void move(float timeScale);
   virtual void collide(GameObject *other);
 
   virtual void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);

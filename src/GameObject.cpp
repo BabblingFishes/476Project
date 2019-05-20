@@ -48,20 +48,23 @@ void GameObject::addForce(vec3 force) {
 }
 
 // called once per frame
-void GameObject::update() {
-  move();
+void GameObject::update(float timeScale) {
+  move(timeScale);
 }
 
 // uses physics to decide new position
-void GameObject::move() {
+void GameObject::move(float timeScale) {
   //TODO: add gravity
   //TODO: spin?
 
-  velocity *= 0.98f; // ""friction"" TODO
-  //velocity += netForce * timePassed / mass
-  velocity += netForce / mass;
-  position += velocity;
+  velocity *= 1 - (0.02f * timeScale); // ""friction"" TODO
+  velocity += netForce * timeScale / mass;
+  position += velocity * timeScale;
   netForce = vec3(0);
+
+  /* if(position.y > 0) { // ""gravity"" TODO
+    position
+  } */
 
   if(position.y < 0) {
     position.y -= position.y;
@@ -92,4 +95,3 @@ void GameObject::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     shape->draw(prog);
   Model->popMatrix();
 }
-

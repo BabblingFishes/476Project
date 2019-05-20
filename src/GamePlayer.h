@@ -39,7 +39,7 @@ public:
   float getCamPhi();
   float getCamTheta();
 
-  void update(bool *wasdIsDown, bool *arrowIsDown);
+  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 
