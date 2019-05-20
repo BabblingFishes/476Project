@@ -767,7 +767,7 @@ int main(int argc, char **argv) {
 		timeScale = elapsed.count() / (10e+9);
 		timeScale *= 500; //TODO this is adjusting to fish's crap speed, but we can just adjust other variables instead
 
-		cout << timeScale << endl; //DEBUG
+		//cout << timeScale << endl; //DEBUG
 	}
 
 	// Quit program.

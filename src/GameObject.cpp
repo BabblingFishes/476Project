@@ -59,7 +59,7 @@ void GameObject::move(float timeScale) {
 
   velocity *= 1 - (0.02f * timeScale); // ""friction"" TODO
   velocity += netForce * timeScale / mass;
-  position += velocity * timeScale;
+  position += velocity;
   netForce = vec3(0);
 
   /* if(position.y > 0) { // ""gravity"" TODO
