@@ -28,6 +28,9 @@ void GamePlayer::positionCamera() {
   camPosition = position - (cameraForward * camZoom);
 }
 
+vec3 GamePlayer::getCamPos() { return camPosition; }
+vec3 GamePlayer::getPos() { return position; }
+
 void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   //player model
   Model->pushMatrix();

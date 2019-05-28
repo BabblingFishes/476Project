@@ -29,6 +29,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GameObject.h"
 #include "GamePlayer.h"
 #include "GOCow.h"
+#include "VFC.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -44,6 +45,9 @@ Winter 2017 - ZJW (Piddington texture write)
 #define WORLD_SIZE 100
 #define MAP_WIDTH 120
 #define MAP_LENGTH 162
+#define TREE_OUT_BORDER_DIST 4
+#define TREE_IN_BORDER_DIST 3
+#define CULL_DIST 200.0f
 
 using namespace std;
 using namespace glm;
@@ -104,7 +108,7 @@ public:
         vector<GameObject> mapObjs;
         int xPos, zPos;
 
-        for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 4) {
+        for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += TREE_OUT_BORDER_DIST) {
             if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
                 zPos = i;
                 xPos = (-MAP_WIDTH / 2);
@@ -133,7 +137,7 @@ public:
             }
         }
         //Tree lines within border. Each for loop is a line
-        for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
+        for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += TREE_IN_BORDER_DIST) {
             if (i > -20 || i < -40) {
                 xPos = i;
                 if (i % 2 == 0) {
@@ -146,7 +150,7 @@ public:
                 mapObjs.push_back(obj5);
             }
         }
-        for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
+        for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += TREE_IN_BORDER_DIST) {
             xPos = i;
             if (i % 2 == 0) {
                 zPos = 0 + 2;
@@ -157,7 +161,7 @@ public:
             GameObject obj6 = GameObject(shape, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
             mapObjs.push_back(obj6);
         }
-        for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= 3) {
+        for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= TREE_IN_BORDER_DIST) {
             zPos = i;
             if (i % 2 == 0) {
                 xPos = 0 + 2;
@@ -214,6 +218,9 @@ public:
 
 	double mouseXPrev = 0;
 	double mouseYPrev = 0;
+    
+    bool CULL = true;
+    bool CULL_DEBUG = false;
 
     vec3 playerPos;// = vec3(45, 0, -60); //player position, TODO replace with the one in player
 
@@ -267,6 +274,12 @@ public:
         case GLFW_KEY_N: //display wireframe
   				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   				break;
+        case GLFW_KEY_C: //Turn VFC on/off, starts on
+                CULL = !CULL;
+                break;
+        case GLFW_KEY_V: //VFC overhead debug cam
+                CULL_DEBUG = !CULL_DEBUG;
+                break;
   			}
       }
     }
@@ -572,8 +585,156 @@ void initTex(const std::string& resourceDirectory)
 		texProg->unbind();
 	}
 
+    
+    
+    
+    //----------------------------------------------------------------------------
+    /*mat4 SetProjectionMatrix(shared_ptr<Program> curShade) {
+        int width, height;
+        glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+        float aspect = width/(float)height;
+        mat4 Projection = perspective(radians(60.0f), aspect, 0.1f, CULL_DIST);
+        glUniformMatrix4fv(curShade->getUniform("P"), 1, GL_FALSE, value_ptr(Projection));
+        return Projection;
+    }
+    
+    mat4 SetOrthoMatrix(shared_ptr<Program> curShade) {
+        float wS = 2.5;
+        mat4 ortho = glm::ortho(-15.0f*wS, 15.0f*wS, -15.0f*wS, 15.0f*wS, 2.1f, 100.f);
+        glUniformMatrix4fv(curShade->getUniform("P"), 1, GL_FALSE, value_ptr(ortho));
+        return ortho;
+    }
+    
+    // camera controls - this is the camera for the top down view
+    mat4 SetTopView(shared_ptr<Program> curShade, vec3 camPosition, vec3 position) {
+        mat4 Cam = lookAt(camPosition + vec3(0, 8, 0), camPosition, position - camPosition);
+        glUniformMatrix4fv(curShade->getUniform("V"), 1, GL_FALSE, value_ptr(Cam));
+        return Cam;
+    }
+    
+    //normal game camera
+    mat4 SetView(shared_ptr<Program> curShade, vec3 camPosition, vec3 position) {
+        mat4 Cam = lookAt(camPosition, position, vec3(0, 1, 0));
+        glUniformMatrix4fv(curShade->getUniform("V"), 1, GL_FALSE, value_ptr(Cam));
+        return Cam;
+    }
+    
+    vec4 Left, Right, Bottom, Top, Near, Far;
+    vec4 planes[6];
+    
+    void ExtractVFPlanes(mat4 P, mat4 V) {
+        //composite matrix
+        mat4 comp = P*V;
+        float magnitude;
+        vec3 n; //use to pull out normal
+        float l; //length of normal for plane normalization
+        
+        Left.x = comp[0][3] + comp[0][0]; // see handout to fill in with values from comp
+        Left.y = comp[1][3] + comp[1][0]; // see handout to fill in with values from comp
+        Left.z = comp[2][3] + comp[2][0]; // see handout to fill in with values from comp
+        Left.w = comp[3][3] + comp[3][0]; // see handout to fill in with values from comp
+        magnitude = sqrt(pow(Left.x, 2) + pow(Left.y, 2) + pow(Left.z, 2));
+        Left.x = Left.x / magnitude;
+        Left.y = Left.y / magnitude;
+        Left.z = Left.z / magnitude;
+        Left.w = Left.w / magnitude;
+        planes[0] = Left;
+        //cout << "Left' " << Left.x << " " << Left.y << " " <<Left.z << " " << Left.w << endl;
+        
+        Right.x = comp[0][3] - comp[0][0]; // see handout to fill in with values from comp
+        Right.y = comp[1][3] - comp[1][0]; // see handout to fill in with values from comp
+        Right.z = comp[2][3] - comp[2][0]; // see handout to fill in with values from comp
+        Right.w = comp[3][3] - comp[3][0]; // see handout to fill in with values from comp
+        magnitude = sqrt(pow(Right.x, 2) + pow(Right.y, 2) + pow(Right.z, 2));
+        Right.x = Right.x / magnitude;
+        Right.y = Right.y / magnitude;
+        Right.z = Right.z / magnitude;
+        Right.w = Right.w / magnitude;
+        planes[1] = Right;
+        //cout << "Right " << Right.x << " " << Right.y << " " <<Right.z << " " << Right.w << endl;
+        
+        Bottom.x = comp[0][3] + comp[0][1]; // see handout to fill in with values from comp
+        Bottom.y = comp[1][3] + comp[1][1]; // see handout to fill in with values from comp
+        Bottom.z = comp[2][3] + comp[2][1]; // see handout to fill in with values from comp
+        Bottom.w = comp[3][3] + comp[3][1]; // see handout to fill in with values from comp
+        magnitude = sqrt(pow(Bottom.x, 2) + pow(Bottom.y, 2) + pow(Bottom.z, 2));
+        Bottom.x = Bottom.x / magnitude;
+        Bottom.y = Bottom.y / magnitude;
+        Bottom.z = Bottom.z / magnitude;
+        Bottom.w = Bottom.w / magnitude;
+        planes[2] = Bottom;
+        //cout << "Bottom " << Bottom.x << " " << Bottom.y << " " <<Bottom.z << " " << Bottom.w << endl;
+        
+        Top.x = comp[0][3] - comp[0][1]; // see handout to fill in with values from comp
+        Top.y = comp[1][3] - comp[1][1]; // see handout to fill in with values from comp
+        Top.z = comp[2][3] - comp[2][1]; // see handout to fill in with values from comp
+        Top.w = comp[3][3] - comp[3][1]; // see handout to fill in with values from comp
+        magnitude = sqrt(pow(Top.x, 2) + pow(Top.y, 2) + pow(Top.z, 2));
+        Top.x = Top.x / magnitude;
+        Top.y = Top.y / magnitude;
+        Top.z = Top.z / magnitude;
+        Top.w = Top.w / magnitude;
+        planes[3] = Top;
+        //cout << "Top " << Top.x << " " << Top.y << " " <<Top.z << " " << Top.w << endl;
+        
+        Near.x = comp[0][3] + comp[0][2]; // see handout to fill in with values from comp
+        Near.y = comp[1][3] + comp[1][2]; // see handout to fill in with values from comp
+        Near.z = comp[2][3] + comp[2][2]; // see handout to fill in with values from comp
+        Near.w = comp[3][3] + comp[3][2]; // see handout to fill in with values from comp
+        magnitude = sqrt(pow(Near.x, 2) + pow(Near.y, 2) + pow(Near.z, 2));
+        Near.x = Near.x / magnitude;
+        Near.y = Near.y / magnitude;
+        Near.z = Near.z / magnitude;
+        Near.w = Near.w / magnitude;
+        planes[4] = Near;
+        //cout << "Near " << Near.x << " " << Near.y << " " <<Near.z << " " << Near.w << endl;
+        
+        Far.x = comp[0][3] - comp[0][2]; // see handout to fill in with values from comp
+        Far.y = comp[1][3] - comp[1][2]; // see handout to fill in with values from comp
+        Far.z = comp[2][3] - comp[2][2]; // see handout to fill in with values from comp
+        Far.w = comp[3][3] - comp[3][2]; // see handout to fill in with values from comp
+        magnitude = sqrt(pow(Far.x, 2) + pow(Far.y, 2) + pow(Far.z, 2));
+        Far.x = Far.x / magnitude;
+        Far.y = Far.y / magnitude;
+        Far.z = Far.z / magnitude;
+        Far.w = Far.w / magnitude;
+        planes[5] = Far;
+        //cout << "Far " << Far.x << " " << Far.y << " " <<Far.z << " " << Far.w << endl;
+    }
+    
+    // helper function to compute distance to the plane
+    float DistToPlane(float A, float B, float C, float D, vec3 point) {
+        float dist = ((A * point.x) + (B * point.y) + (C * point.z) + D);
+        return dist;
+    }
+    
+    // Actual cull on planes
+    //returns 1 to CULL
+    int ViewFrustCull(vec3 center, float radius, bool cull) {
+        float dist;
+        
+        if (cull) {
+            //cout << "testing against all planes" << endl;
+            for (int i=0; i < 6; i++) {
+                //Added 4 to the distance as a buffer to fix clippling issue
+                dist = DistToPlane(planes[i].x, planes[i].y, planes[i].z, planes[i].w, center) + 4;
+                //test against each plane
+                if ((dist) < radius) {
+                    return 1;
+                }
+            }
+            return 0;
+        } else {
+            return 0;
+        }
+    }*/
+    //----------------------------------------------------------------------------
+    
+    
+    
+    
 	void renderScene(shared_ptr<MatrixStack> View, shared_ptr<MatrixStack> Model) {
-		glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
+		//glUniformMatrix4fv(prog->getUniform("V"), 1, GL_FALSE, value_ptr(View->topMatrix()));
 
 		Model->loadIdentity();
 		//Model->rotate(radians(cTheta), vec3(0, 1, 0));
@@ -585,15 +746,19 @@ void initTex(const std::string& resourceDirectory)
         Model->pushMatrix();
         for (uint i = 0; i < mapObjs.size(); i++) {
             GameObject cur = mapObjs[i];
-
-            cur.draw(prog, Model, 1);
+            
+            if (!CULL || !ViewFrustCull(cur.getPos(), cur.getRadius(), CULL)) {
+                cur.draw(prog, Model, 1);
+            }
         }
         Model->popMatrix();
 
 		//TODO: stuff doesn't move, call checking collisions and behavior if there is one
 		for (uint i = 0; i < gameObjs.size(); i++) {
 			GOCow *cur = &(gameObjs[i]);
-            cur->collect(MSpos, MSrad, numCollected);
+            if (!cur->isCollected()) {
+                cur->collect(MSpos, MSrad, numCollected);
+            }
 			//cur.isColliding(gameObjs, player);
 			if (cur->isColliding(player)) {
 				cur->collide(player);
@@ -602,7 +767,9 @@ void initTex(const std::string& resourceDirectory)
             if (!cur->isCollected()) {
                 cur->update();
             }
-			cur->draw(prog, Model);
+            if (!CULL || !ViewFrustCull(cur->getPos(), cur->getRadius(), CULL)) {
+                cur->draw(prog, Model);
+            }
 		}
         
         //Mothership (Sphere for now, will change later)
@@ -652,7 +819,7 @@ void initTex(const std::string& resourceDirectory)
 
 		//Draw our scene - two meshes - right now to a texture
 		prog->bind();
-		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
+		//glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, value_ptr(Projection->topMatrix()));
 
 		//light
 		glUniform3f(prog->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
@@ -661,6 +828,10 @@ void initTex(const std::string& resourceDirectory)
 		//time(&startTime);
 
 		t1 = high_resolution_clock::now();
+        
+        mat4 P = SetProjectionMatrix(prog);
+        mat4 V = SetView(prog, player->getCamPos(), player->getPos());
+        ExtractVFPlanes(P, V);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuf[0]);
 		Model->pushMatrix();
@@ -671,6 +842,15 @@ void initTex(const std::string& resourceDirectory)
 		Model->pushMatrix();
 			renderScene(View, Model);
 		Model->popMatrix();
+        
+        if (CULL_DEBUG) {
+            /* draw the scene from a top down camera */
+            glClear( GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, 300, 300);
+            SetOrthoMatrix(prog);
+            SetTopView(prog, player->getCamPos(), player->getPos());
+            renderScene(View, Model);
+        }
 
 		//time(&endTime);
 		t2 = high_resolution_clock::now();
@@ -768,7 +948,7 @@ int main(int argc, char **argv)
 	// and GL context, etc.
 
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(512, 512);
+	windowManager->init(1024, 1024);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 

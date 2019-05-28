@@ -31,6 +31,9 @@ private:
   void positionCamera();
 
 public:
+    vec3 getCamPos();
+    vec3 getPos();
+    
   GamePlayer(shared_ptr<Shape> shape, vec3 position, vec3 rotation, vec3 scale);
 
   void update(std::shared_ptr<MatrixStack> View, bool *wasdIsDown, bool *arrowIsDown);
