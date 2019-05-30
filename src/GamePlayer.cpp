@@ -32,7 +32,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   positionCamera();
 }
 
-vec3 GamePlayer::getCamPos() { return camPosition; }
+
 float GamePlayer::getCamPhi() { return camPhi; }
 float GamePlayer::getCamTheta() { return camTheta; }
 
@@ -42,6 +42,7 @@ void GamePlayer::positionCamera() {
                             cos(camPhi) * cos(camTheta));
   camPosition = position - (cameraForward * camZoom);
 }
+vec3 GamePlayer::getCamPos() { return camPosition; }
 
 void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   //player model

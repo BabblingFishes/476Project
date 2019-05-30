@@ -33,6 +33,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GamePlayer.h"
 #include "GOCow.h"
 #include "GOMothership.h"
+#include "VFC.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -67,6 +68,10 @@ public:
 	GLuint depthMapFBO;
 	const GLuint SHADOWMAP_WIDTH = 1024, SHADOWMAP_HEIGHT = 1024;
 	GLuint depthMap;
+
+	//VFCing
+	bool CULL = true;
+	bool CULL_DEBUG = false;
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
@@ -561,7 +566,7 @@ public:
 	/***** Rendering *****/
 
 /* P - projection */
-	void setProjectionMatrix(shared_ptr<Program> curProg) {
+	void setProjectionMatrix_OLD(shared_ptr<Program> curProg) {
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		//glViewport(0, 0, width, height); ??
@@ -579,7 +584,7 @@ public:
   }
 
 /* V - camera view */
-  void setView(shared_ptr<Program> curProg) {
+  void setView_OLD(shared_ptr<Program> curProg) {
 		vec3 camPos = player->getCamPos();
 		glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
   	mat4 View = glm::lookAt(camPos, player->getPos(), vec3(0, 1, 0));
@@ -609,20 +614,26 @@ public:
 
 		if (shadowTexture) {
 			//mothership
-			mothership->getTexture()->bind(shadowTexture);
-			mothership->draw(curProg, Model);
+			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
+				mothership->getTexture()->bind(shadowTexture);
+				mothership->draw(curProg, Model);
+			}
 			//ground
 			ground->getTexture()->bind(shadowTexture);
 			ground->draw(curProg, Model);
 			//trees and such
 			for(objI = mapObjs.begin(); objI != mapObjs.end(); objI++) {
-				objI->getTexture()->bind(shadowTexture);
-			  objI->draw(curProg, Model);
+				if(!ViewFrustCull(objI->getPos(), objI->getRadius(), CULL)) {
+					objI->getTexture()->bind(shadowTexture);
+			  	objI->draw(curProg, Model);
+				}
 			}
 			//cows
 			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
-				cowI->getTexture()->bind(shadowTexture);
-			  cowI->draw(curProg, Model);
+				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
+					cowI->getTexture()->bind(shadowTexture);
+			  	cowI->draw(curProg, Model);
+				}
 			}
 			//player
 			player->getTexture()->bind(shadowTexture);
@@ -630,17 +641,22 @@ public:
 		}
 		else {
 			//mothership
-			mothership->draw(curProg, Model);
-
+			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
+				mothership->draw(curProg, Model);
+			}
 			//ground
 			ground->draw(curProg, Model);
 			//trees and such
 			for(objI = mapObjs.begin(); objI != mapObjs.end(); objI++) {
-			  objI->draw(curProg, Model);
+				if(!ViewFrustCull(objI->getPos(), objI->getRadius(), CULL)) {
+			  	objI->draw(curProg, Model);
+				}
 			}
 			//cows
-            for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
-			  cowI->draw(curProg, Model);
+			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
+				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
+			  	cowI->draw(curProg, Model);
+				}
 			}
 			//player
 			player->draw(curProg, Model);
@@ -655,7 +671,7 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear framebuffer
 
 		skyProg->bind();
-		setProjectionMatrix(skyProg);
+		setProjectionMatrix_OLD(skyProg);
 		setSkyBoxView(skyProg);
 		//mat4 ident(1.0); // TODO ????
 		glDepthFunc(GL_LEQUAL);
@@ -704,8 +720,10 @@ public:
 		glUniform3f(shadowProg->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
 		glUniform3f(shadowProg->getUniform("lightClr"), 0.3f, 0.3f, 0.3f);
 		//render scene
-		setProjectionMatrix(shadowProg);
-		setView(shadowProg);
+		mat4 P = SetProjectionMatrix(shadowProg, windowManager, width, height);
+		mat4 V = SetView(shadowProg, player->getCamPos(), player->getPos());
+		ExtractVFPlanes(P, V);
+
 		mat4 lightS = lightP * lightV;
 		glUniformMatrix4fv(shadowProg->getUniform("LS"), 1, GL_FALSE, value_ptr(lightS));
 		//TODO: is there other uniform data that must be sent?
