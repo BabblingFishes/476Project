@@ -72,7 +72,7 @@ bool GameObject::borderCollision(vec3 nextPos) {
         //cout << "OUTSIDE WIDTH: " << endl;
         return true;
     }
-    if (nextZ < -length - 2 || nextZ > length + 2) {
+    if (nextZ < -length + 2 || nextZ > length - 2) {
         velocity *= vec3(1, 1, -1);
         //cout << "OUTSIDE LENGTH" << endl;
         return true;

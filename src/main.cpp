@@ -393,7 +393,7 @@ public:
 
 		//TODO replace below defaultTex with textures
 		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0)); //40, -60
+		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
 		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
@@ -409,7 +409,6 @@ public:
 		return cows;
 	}
 
-
   vector<GameObject> generateMap(Shape *shape, Texture *texture) {
     vector<GameObject> mapObjs;
     int xPos, zPos;
@@ -418,28 +417,28 @@ public:
       if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj2);
       }
       else {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj2);
 
         xPos = i;
         zPos = -MAP_LENGTH / 2;
-        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj3);
 
         zPos = MAP_LENGTH / 2;
-        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj4);
       }
     }
@@ -454,7 +453,7 @@ public:
             else {
                 zPos = -30 - 2;
             }
-            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
             mapObjs.push_back(obj5);
           }
         }
@@ -467,7 +466,7 @@ public:
           else {
               zPos = 0 - 2;
           }
-          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
           mapObjs.push_back(obj6);
         }
         // -2 < x < 2, -5 < z < MAP_LENGTH - 25
@@ -479,7 +478,7 @@ public:
           else {
               xPos = 0 - 2;
           }
-          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
           mapObjs.push_back(obj7);
       }
 
