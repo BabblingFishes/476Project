@@ -1,5 +1,8 @@
 #include "GamePlayer.h"
 
+#define MAP_WIDTH 120
+#define MAP_LENGTH 162
+
 using namespace std;
 using namespace glm;
 
@@ -90,10 +93,18 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
   vec3 xForce = playerLeft * moveMagn;
 
   //player controls
-  if (wasdIsDown[0]) netForce += zForce;
-  if (wasdIsDown[1]) netForce -= xForce;
-  if (wasdIsDown[2]) netForce -= zForce;
-  if (wasdIsDown[3]) netForce += xForce;
+    if (wasdIsDown[0]) {
+            netForce += zForce;
+    }
+    if (wasdIsDown[1]) {
+            netForce -= xForce;
+    }
+    if (wasdIsDown[2]) {
+            netForce -= zForce;
+    }
+    if (wasdIsDown[3]) {
+            netForce += xForce;
+    }
 
   move(timeScale);
 
