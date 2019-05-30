@@ -34,8 +34,8 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOCow.h"
 #include "GOMothership.h"
 //assimp
-#include "Shader.h"
-#include "Model.h"
+//#include "Shader.h"
+//#include "Model.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
