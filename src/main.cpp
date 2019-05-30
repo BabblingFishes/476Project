@@ -393,7 +393,7 @@ public:
 
 		//TODO replace below defaultTex with textures
 		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(10.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
+		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0)); //40, -60
 		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
@@ -444,6 +444,7 @@ public:
       }
     }
 		//Tree lines within border. Each for loop is a line
+        // -MAP_WIDTH < x < -40, -20 < x < MAP_WIDTH, -28 < z < -32
         for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
           if (i > -20 || i < -40) {
             xPos = i;
@@ -457,6 +458,7 @@ public:
             mapObjs.push_back(obj5);
           }
         }
+        // -MAP_WIDTH < x < 0, -2 < z < 2
         for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
           xPos = i;
           if (i % 2 == 0) {
@@ -468,7 +470,8 @@ public:
           GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
           mapObjs.push_back(obj6);
         }
-        for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= 3) {
+        // -2 < x < 2, -5 < z < MAP_LENGTH - 25
+        for (int i = ((MAP_LENGTH / 2) - 25); i >= 0; i -= 3) {
           zPos = i;
           if (i % 2 == 0) {
               xPos = 0 + 2;
@@ -637,7 +640,7 @@ public:
 			  objI->draw(curProg, Model);
 			}
 			//cows
-			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
+            for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
 			  cowI->draw(curProg, Model);
 			}
 			//player
@@ -734,7 +737,7 @@ int main(int argc, char **argv) {
 
 	// Establish window
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(512, 512);
+	windowManager->init(1024, 1024);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 

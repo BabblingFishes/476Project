@@ -55,6 +55,7 @@ public:
   void addForce(vec3 force);
 
   virtual void update(float timeScale);
+  bool borderCollision(vec3 nextPos);
   virtual void move(float timeScale);
   virtual void collide(GameObject *other);
 
