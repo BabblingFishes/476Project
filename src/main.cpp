@@ -718,8 +718,8 @@ public:
 		glUniform3f(shadowProg->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
 		glUniform3f(shadowProg->getUniform("lightClr"), 0.3f, 0.3f, 0.3f);
 		//render scene
-		mat4 P = setProjectionMatrix(shadowProg, windowManager, width, height);
-		mat4 V = setView(shadowProg, player->getCamPos(), player->getPos());
+		mat4 P = SetProjectionMatrix(shadowProg, windowManager, width, height);
+		mat4 V = SetView(shadowProg, player->getCamPos(), player->getPos());
 		ExtractVFPlanes(P, V);
 
 		mat4 lightS = lightP * lightV;

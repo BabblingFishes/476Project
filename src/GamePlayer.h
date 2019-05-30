@@ -34,7 +34,6 @@ private:
 
 public:
 
-    vec3 getCamPos();
   GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale);
 
 
