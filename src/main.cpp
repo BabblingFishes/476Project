@@ -424,8 +424,7 @@ public:
 		cowShape->init();
 
     // Initialize the obj mesh VBOs etc
-	Model pinetree(("../resources/Models/pine_tree_free.fbx"));
-    tree = new Shape();
+	tree = new Shape();
     tree->loadMesh(resourceDirectory + "/tree.obj");
     tree->resize();
     tree->init();
