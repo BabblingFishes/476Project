@@ -2,11 +2,14 @@
 
 #define PI 3.14159
 
+#include <irrKlang/irrKlang.h>
+
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 // random constructor
-GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
+GOCow::GOCow(Shape *shape, tTexture *texture, int worldSize) {
   this->shape = shape;
   this->texture = texture;
   radius = 0.5;
@@ -32,7 +35,7 @@ GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
 }
 
 // specific constructor
-GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
+GOCow::GOCow(Shape *shape, tTexture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
   this->shape = shape;
   this->texture = texture;
   this->material = material;
@@ -89,5 +92,9 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
 }
 
 void GOCow::collect() {
+	ISoundEngine* engine = createIrrKlangDevice();
+	if (!engine)
+		return;
+	engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
   collected = true;
 }

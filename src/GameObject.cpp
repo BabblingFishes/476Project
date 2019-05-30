@@ -5,7 +5,7 @@ using namespace glm;
 
 GameObject::GameObject(){}
 
-GameObject::GameObject(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
+GameObject::GameObject(Shape *shape, tTexture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
   this->shape = shape;
   this->texture = texture;
   this->radius = radius;
@@ -22,7 +22,7 @@ GameObject::GameObject(Shape *shape, Texture *texture, float radius, vec3 positi
     27.90); //shine
 }
 
-Texture *GameObject::getTexture() { return texture; }
+tTexture *GameObject::getTexture() { return texture; }
 float GameObject::getRadius() { return radius; }
 float GameObject::getMass() { return mass; }
 vec3 GameObject::getPos() { return position; }

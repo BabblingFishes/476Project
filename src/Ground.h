@@ -8,7 +8,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "Texture.h"
+#include "tTexture.h"
 #include "Material.h"
 #include "GameObject.h"
 
@@ -21,15 +21,15 @@ using namespace glm;
 class Ground {
 private:
   Shape *shape;
-  Texture *texture;
+  tTexture *texture;
   Material *material;
   float width;
   float length;
 
 public:
-  Ground(Shape *shape, Texture *texture, float width, float length);
+  Ground(Shape *shape, tTexture *texture, float width, float length);
 
-  Texture *getTexture();
+  tTexture *getTexture();
 
   bool isColliding(vec3 point);
   bool isColliding(GameObject *gameObj);

@@ -8,7 +8,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "Texture.h"
+#include "tTexture.h"
 #include "Material.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -20,7 +20,7 @@ using namespace glm;
 class GameObject {
 protected:
   Shape *shape;
-  Texture *texture;
+  tTexture *texture;
   Material *material;
   float radius;
   float mass;
@@ -33,9 +33,9 @@ protected:
 public:
   GameObject();
 
-  GameObject(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
+  GameObject(Shape *shape, tTexture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
-  Texture *getTexture();
+  tTexture *getTexture();
   float getRadius();
   float getMass();
   vec3 getPos();

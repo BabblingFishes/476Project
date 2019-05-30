@@ -3,7 +3,7 @@
 using namespace std;
 using namespace glm;
 
-Ground::Ground(Shape *shape, Texture *texture, float width, float length) {
+Ground::Ground(Shape *shape, tTexture *texture, float width, float length) {
   this->shape = shape;
   this->texture = texture;
   this->width = width;
@@ -21,7 +21,7 @@ Ground::Ground(Shape *shape, Texture *texture, float width, float length) {
   glUniform1f(curProg->getUniform("shine"), 12.8);*/
 }
 
-Texture *Ground::getTexture() { return texture; }
+tTexture *Ground::getTexture() { return texture; }
 
 bool Ground::isColliding(vec3 point) {
   return point.y <= 0;

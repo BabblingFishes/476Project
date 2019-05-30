@@ -14,16 +14,16 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
+#include <irrKlang/irrKlang.h>	
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
 #include "stb_image.h"
-
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "Texture.h"
+#include "tTexture.h"
 #include "Material.h"
 #include "SkyBox.h"
 #include "WindowManager.h"
@@ -33,6 +33,9 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GamePlayer.h"
 #include "GOCow.h"
 #include "GOMothership.h"
+//assimp
+#include "Shader.h"
+#include "Model.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -49,6 +52,7 @@ Winter 2017 - ZJW (Piddington texture write)
 using namespace std;
 using namespace glm;
 using namespace std::chrono;
+using namespace irrklang;
 
 class Application : public EventCallbacks {
 public:
@@ -68,14 +72,20 @@ public:
 	const GLuint SHADOWMAP_WIDTH = 1024, SHADOWMAP_HEIGHT = 1024;
 	GLuint depthMap;
 
+	// map data
+	int *map;
+
 	// Shape to be used (from obj file)
 	Shape *cowShape;
 	Shape *playerShape;
 	Shape *cube;
 	Shape *sphere;
-  Shape *tree;
+    Shape *tree;
 
-	Texture *defaultTex;
+	//assimp models
+	//Model pinetree;
+
+	tTexture *defaultTex;
 
 	SkyBox *skybox;
 
@@ -215,6 +225,54 @@ public:
 		initSkyBox(resourceDirectory);
 	}
 
+	//init map from editor
+	void initMap(){
+		int scanned = 0;
+		int width, height, bpp;
+		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &width, &height, &bpp, 3);
+
+		cout << endl << "Map width: " << width << endl;
+		cout << "Map height: " << height << endl;
+		cout << "Area: " << height * width << endl;
+		cout << "Bytes per pixel: " << bpp << endl;
+
+		int arrlen = width * height * bpp;
+		map = (int*)malloc(arrlen * sizeof(int));
+		cout << "arr size: " << arrlen << endl;
+
+		int x = 0;
+		int y = 0;
+		int counter = 0;
+		for (int i = 0; i < arrlen; i += bpp) {
+			int r = int(rgb[i]);
+			int g = int(rgb[i + 1]);
+			int b = int(rgb[i + 2]);
+			if (counter > width - 1) {
+				counter = 0;
+				y = 0;
+				x++;
+			}
+			int xInd = height * 5 * x + 5 * y + 0;
+			int yInd = height * 5 * x + 5 * y + 1;
+			int rInd = height * 5 * x + 5 * y + 2;
+			int gInd = height * 5 * x + 5 * y + 3;
+			int bInd = height * 5 * x + 5 * y + 4;
+
+			map[xInd] = x;
+			map[yInd] = y;
+			map[rInd] = r;
+			map[gInd] = g;
+			map[bInd] = b;
+			//arr[x][y][0] = r;
+			//arr[x][y][1] = g;
+			//arr[x][y][2] = b;
+			//cout << endl << "x: " << x << "\ty: " << y << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
+			y++;
+			counter++;
+			scanned++;
+		}
+	}
+
 	// initializes skybox program
 	void initSkyBox(const std::string& resourceDirectory) {
 		//init the skybox program
@@ -322,7 +380,7 @@ public:
 		};
 		cubeMapTexture = createSky(resourceDirectory + "/",  faces);
 
-		defaultTex = new Texture();
+		defaultTex = new tTexture();
 		defaultTex->setFilename(resourceDirectory + "/grass.jpg");
 		defaultTex->init();
 		defaultTex->setUnit(0);
@@ -366,6 +424,7 @@ public:
 		cowShape->init();
 
     // Initialize the obj mesh VBOs etc
+	Model pinetree(("../resources/Models/pine_tree_free.fbx"));
     tree = new Shape();
     tree->loadMesh(resourceDirectory + "/tree.obj");
     tree->resize();
@@ -401,7 +460,7 @@ public:
 	}
 
 	// makes cows and places them randomly in the world
-	vector<GOCow> generateCows(Shape *shape, Texture *texture) {
+	vector<GOCow> generateCows(Shape *shape, tTexture *texture) {
 		vector<GOCow> cows;
 		for (int i = 0; i < NUMOBJS; i++) {
 			cows.push_back(GOCow(shape, texture, WORLD_SIZE - 40));
@@ -410,7 +469,7 @@ public:
 	}
 
 
-  vector<GameObject> generateMap(Shape *shape, Texture *texture) {
+  vector<GameObject> generateMap(Shape *shape, tTexture *texture) {
     vector<GameObject> mapObjs;
     int xPos, zPos;
 
@@ -742,7 +801,13 @@ int main(int argc, char **argv) {
 	application->initTex(resourceDir);
 	application->initGeom(resourceDir);
 
-	float timeScale;
+	//play background sfx
+	ISoundEngine* engine = createIrrKlangDevice();
+	if (!engine)
+		return 0;
+	engine->play2D("../resources/Audio/Night.mp3", true);
+
+	float timeScale = 0;
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
 
