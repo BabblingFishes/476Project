@@ -1,6 +1,7 @@
 #include "GOCow.h"
 
 #define PI 3.14159
+#define NUMOBJS 11
 
 using namespace std;
 using namespace glm;
@@ -45,18 +46,8 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
   collected = false;
 }
 
-/*bool GOCow::checkInGoal(vec3 MSpos, float MSrad) {
-    if (length(MSpos - position) < MSrad) {
-        inGoal = true;
-    }
-    else {
-        inGoal = false;
-    }
-}*/
-
-//bool GOCow::isInGoal()   {   return inGoal;   }
-
 bool GOCow::isCollected()   {   return collected;   }
+
 
 void GOCow::update(float timeScale) {
   float moveMagn = 0.0001f; //walkin' power
@@ -87,6 +78,7 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     shape->draw(prog);
   Model->popMatrix();
 }
+
 
 void GOCow::collect() {
   collected = true;
