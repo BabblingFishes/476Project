@@ -8,11 +8,8 @@
 using namespace std;
 using namespace glm;
 
-WindowManager * windowManager = nullptr;
-
-mat4 SetProjectionMatrix(shared_ptr<Program> curShade) {
-    int width, height;
-    glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
+mat4 SetProjectionMatrix(shared_ptr<Program> curShade, WindowManager *WM, int width, int height) {
+    glfwGetFramebufferSize(WM->getHandle(), &width, &height);
     float aspect = width/(float)height;
     mat4 Projection = perspective(radians(PLAYER_CAM_DIST), aspect, 0.1f, CULL_DIST);
     glUniformMatrix4fv(curShade->getUniform("P"), 1, GL_FALSE, value_ptr(Projection));

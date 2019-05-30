@@ -16,7 +16,7 @@
 using namespace std;
 using namespace glm;
 
-    mat4 SetProjectionMatrix(shared_ptr<Program> curShade);
+    mat4 SetProjectionMatrix(shared_ptr<Program> curShade, WindowManager *WM, int width, int height);
     mat4 SetOrthoMatrix(shared_ptr<Program> curShade);
     mat4 SetTopView(shared_ptr<Program> curShade, vec3 camPosition, vec3 position);
     mat4 SetView(shared_ptr<Program> curShade, vec3 camPosition, vec3 position);
