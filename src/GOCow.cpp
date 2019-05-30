@@ -7,10 +7,17 @@ using namespace std;
 using namespace glm;
 
 // random constructor
-GOCow::GOCow(std::shared_ptr<Shape> shape, int worldSize) {
+GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
   this->shape = shape;
+  this->texture = texture;
   radius = 0.5;
   mass = 1;
+
+  material = new Material(
+    vec3(0.1745, 0.01175, 0.01175), //amb
+    vec3(0.61424, 0.04136, 0.04136), //dif
+    vec3(0.0727811, 0.0626959, 0.0626959), //matSpec
+    27.90); //shine
 
   //pick some random position
   int randXPos = (((float)rand() / (RAND_MAX)) * worldSize * 2) - worldSize;
@@ -20,14 +27,16 @@ GOCow::GOCow(std::shared_ptr<Shape> shape, int worldSize) {
   //pick a random rotation
   rotation = vec3(0 , (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
 
-  scale = vec3(1, 1, 1);
-  velocity = vec3(0, 0, 0);
+  scale = vec3(0.5);
+  velocity = vec3(0.0);
   collected = false;
 }
 
 // specific constructor
-GOCow::GOCow(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
+GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
   this->shape = shape;
+  this->texture = texture;
+  this->material = material;
   this->radius = radius;
   this->position = position;
   this->rotation = rotation;
@@ -39,50 +48,38 @@ GOCow::GOCow(shared_ptr<Shape> shape, float radius, vec3 position, vec3 rotation
 
 bool GOCow::isCollected()   {   return collected;   }
 
-void GOCow::update() {
+
+void GOCow::update(float timeScale) {
   float moveMagn = 0.0001f; //walkin' power
   if(position.y == 0) { //if on the ground
     //move in the direction of the rotation
     netForce += vec3(sin(rotation.y), 0, cos(rotation.y)) * vec3(moveMagn);
   }
-  move();
+  move(timeScale);
 }
 
-void GOCow::draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model) {
+void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
     Model->translate(position);
     Model->rotate(rotation.x, vec3(1, 0, 0));
     Model->rotate(rotation.y, vec3(0, 1, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->scale(scale);
-    if(collected) {
+    if(collected) { //DEBUG
       glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
       glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
       glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
       glUniform1f(prog->getUniform("shine"), 120.0);
     }
     else {
-      glUniform3f(prog->getUniform("matAmb"), 0.1745f, 0.01175f, 0.01175f);
-			glUniform3f(prog->getUniform("matDif"), 0.61424f, 0.04136f, 0.04136f);
-			glUniform3f(prog->getUniform("matSpec"), 0.0727811f, 0.0626959f, 0.0626959f);
-			glUniform1f(prog->getUniform("shine"), 0.1);
+      material->draw(prog);
     }
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);
   Model->popMatrix();
 }
 
-void GOCow::collect(vec3 MSpos, float MSrad, int &numCollected) {
-    if (length(MSpos - position) < MSrad) {
-        numCollected++;
-        if (numCollected == NUMOBJS) {
-            cout << "Mission accomplished! You've colleced all of the cows!" << endl;
-        }
-        else {
-            cout << "You've collected " << numCollected << " cows so far. Only "
-                << NUMOBJS - numCollected << " more to go!" << endl;
-        }
-        collected = true;
-    }
-}
 
+void GOCow::collect() {
+  collected = true;
+}
