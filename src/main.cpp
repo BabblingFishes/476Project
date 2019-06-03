@@ -73,6 +73,9 @@ public:
 	bool CULL = true;
 	bool CULL_DEBUG = false;
 
+	//map array
+	int* map;
+
 	// Shape to be used (from obj file)
 	Shape *cowShape;
 	Shape *playerShape;
@@ -218,6 +221,55 @@ public:
 		//init GL programs
 		initShadowMapping(resourceDirectory);
 		initSkyBox(resourceDirectory);
+		initMap();
+	}
+
+	//init map from editor
+	void initMap() {
+		int scanned = 0;
+		int width, height, bpp;
+		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &width, &height, &bpp, 3);
+
+		cout << endl << "Map width: " << width << endl;
+		cout << "Map height: " << height << endl;
+		cout << "Area: " << height * width << endl;
+		cout << "Bytes per pixel: " << bpp << endl;
+
+		int arrlen = width * height * bpp;
+		map = (int*)malloc(arrlen * sizeof(int));
+		cout << "arr size: " << arrlen << endl;
+
+		int x = 0;
+		int y = 0;
+		int counter = 0;
+		for (int i = 0; i < arrlen; i += bpp) {
+			int r = int(rgb[i]);
+			int g = int(rgb[i + 1]);
+			int b = int(rgb[i + 2]);
+			if (counter > width - 1) {
+				counter = 0;
+				y = 0;
+				x++;
+			}
+			int xInd = height * 5 * x + 5 * y + 0;
+			int yInd = height * 5 * x + 5 * y + 1;
+			int rInd = height * 5 * x + 5 * y + 2;
+			int gInd = height * 5 * x + 5 * y + 3;
+			int bInd = height * 5 * x + 5 * y + 4;
+
+			map[xInd] = x;
+			map[yInd] = y;
+			map[rInd] = r;
+			map[gInd] = g;
+			map[bInd] = b;
+			//arr[x][y][0] = r;
+			//arr[x][y][1] = g;
+			//arr[x][y][2] = b;
+			//cout << endl << "x: " << x << "\ty: " << y << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
+			y++;
+			counter++;
+			scanned++;
+		}
 	}
 
 	// initializes skybox program
