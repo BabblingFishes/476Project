@@ -81,7 +81,7 @@ public:
 	Shape *playerShape;
 	Shape *cube;
 	Shape *sphere;
-  Shape *tree;
+    Shape *tree;
 
 	Texture *defaultTex;
 
@@ -112,6 +112,7 @@ public:
 	GamePlayer *player = nullptr;
 	Ground *ground;
 	GOMothership *mothership;
+    
 	vector<GameObject> mapObjs;
 	vector<GOCow> gameObjs;
 
@@ -240,7 +241,7 @@ public:
 		cout << "arr size: " << arrlen << endl;
 
 		int x = 0;
-		int y = 0;
+		int z = 0;
 		int counter = 0;
 		for (int i = 0; i < arrlen; i += bpp) {
 			int r = int(rgb[i]);
@@ -248,29 +249,65 @@ public:
 			int b = int(rgb[i + 2]);
 			if (counter > width - 1) {
 				counter = 0;
-				y = 0;
+				z = 0;
 				x++;
 			}
-			int xInd = height * 5 * x + 5 * y + 0;
-			int yInd = height * 5 * x + 5 * y + 1;
-			int rInd = height * 5 * x + 5 * y + 2;
-			int gInd = height * 5 * x + 5 * y + 3;
-			int bInd = height * 5 * x + 5 * y + 4;
+			int xInd = height * 5 * x + 5 * z + 0;
+			int zInd = height * 5 * x + 5 * z + 1;
+			int rInd = height * 5 * x + 5 * z + 2;
+			int gInd = height * 5 * x + 5 * z + 3;
+			int bInd = height * 5 * x + 5 * z + 4;
 
 			map[xInd] = x;
-			map[yInd] = y;
+			map[zInd] = z;
 			map[rInd] = r;
 			map[gInd] = g;
 			map[bInd] = b;
-			//arr[x][y][0] = r;
-			//arr[x][y][1] = g;
-			//arr[x][y][2] = b;
+			//arr[x][z][0] = r;
+			//arr[x][z][1] = g;
+			//arr[x][z][2] = b;
 			//cout << endl << "x: " << x << "\ty: " << y << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
-			y++;
+			z++;
 			counter++;
 			scanned++;
 		}
 	}
+    
+    //Gives the obj based on the RGB value
+    string RGBtoOBJ(int R, int G, int B) {
+        //tree
+        if (R == 0 && G == 255 && B == 0) { return "tree"; }
+        //cow
+        if (R == 0 && G == 0 && B == 0) { return "cow"; }
+        //player
+        if (R == 0 && G == 0 && B == 255) { return "player"; }
+        //mothership
+        if (R == 255 && G == 0 && B == 0) { return "mothership"; }
+    }
+    
+    //Go through the map array and get each obj shape and position
+    void readMap() {
+        for (int i = 0; i < (sizeof(map) / sizeof(int); i += 5) {
+            int x = i;
+            int z = i + 1;
+            int R = i + 2;
+            int G = i + 3;
+            int B = i + 4;
+            string curShape = RGBtoOBJ(R, G, B);
+            if (strcmp(curShape, "tree") == 0) {
+                mapObjs.push_back(GameObject(tree, texture, 1, vec3(x, 4.f, z), vec3(0), vec3(5.f), vec3(0)));
+            }
+            else if (strcmp(curShape, "cow") == 0) {
+                gameObjs.push_back(GOCow(cowShape, texture, x, z));
+            }
+            else if (strcmp(curShape, "player") == 0) {
+                player->setPos(vec3(x, 0, z));
+            }
+            else if (strcmp(curShape, "mothership") == 0) {
+                mothership->setPos(vec3(x, 0, z));
+            }
+        }
+    }
 
 	// initializes skybox program
 	void initSkyBox(const std::string& resourceDirectory) {
@@ -451,7 +488,7 @@ public:
 		//TODO replace below defaultTex with textures
 		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
 		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
+		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20.0, 0.0, 20.0), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
 		initQuad(); //quad for VBO

@@ -7,7 +7,7 @@ using namespace std;
 using namespace glm;
 
 // random constructor
-GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
+GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   this->shape = shape;
   this->texture = texture;
   radius = 0.5;
@@ -20,9 +20,7 @@ GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
     27.90); //shine
 
   //pick some random position
-  int randXPos = (((float)rand() / (RAND_MAX)) * worldSize * 2) - worldSize;
-  int randZPos = (((float)rand() / (RAND_MAX)) * worldSize * 2) - worldSize;
-  position = vec3(randXPos, 0, randZPos);
+  position = vec3(x, 0, z);
 
   //pick a random rotation
   rotation = vec3(0 , (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
