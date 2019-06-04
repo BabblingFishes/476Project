@@ -3,8 +3,11 @@
 #define PI 3.14159
 #define NUMOBJS 11
 
+#include <irrKlang.h>
+
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 // random constructor
 GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
@@ -81,5 +84,9 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
 
 
 void GOCow::collect() {
+	ISoundEngine* engine = createIrrKlangDevice();
+	if (!engine)
+		return;
+	engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
   collected = true;
 }

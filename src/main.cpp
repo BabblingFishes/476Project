@@ -14,11 +14,11 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
+#include <irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
 #include "stb_image.h"
-
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -50,6 +50,7 @@ Winter 2017 - ZJW (Piddington texture write)
 using namespace std;
 using namespace glm;
 using namespace std::chrono;
+using namespace irrklang;
 
 class Application : public EventCallbacks {
 public:
@@ -69,11 +70,12 @@ public:
 	const GLuint SHADOWMAP_WIDTH = 1024, SHADOWMAP_HEIGHT = 1024;
 	GLuint depthMap;
 
+
 	//VFCing
 	bool CULL = true;
 	bool CULL_DEBUG = false;
 
-	//map array
+	//map data
 	int* map;
 
 	// Shape to be used (from obj file)
@@ -81,7 +83,10 @@ public:
 	Shape *playerShape;
 	Shape *cube;
 	Shape *sphere;
-  Shape *tree;
+    Shape *tree;
+
+	//assimp models
+	//Model pinetree;
 
 	Texture *defaultTex;
 
@@ -423,7 +428,7 @@ public:
 		cowShape->init();
 
     // Initialize the obj mesh VBOs etc
-    tree = new Shape();
+	tree = new Shape();
     tree->loadMesh(resourceDirectory + "/tree.obj");
     tree->resize();
     tree->init();
@@ -814,7 +819,13 @@ int main(int argc, char **argv) {
 	application->initTex(resourceDir);
 	application->initGeom(resourceDir);
 
-	float timeScale;
+	//play background sfx
+	ISoundEngine* engine = createIrrKlangDevice();
+	if (!engine)
+		return 0;
+	engine->play2D("../resources/Audio/Night.mp3", true);
+
+	float timeScale = 0;
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
 
