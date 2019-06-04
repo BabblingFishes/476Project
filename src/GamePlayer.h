@@ -8,7 +8,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "tTexture.h"
+#include "Texture.h"
 #include "Material.h"
 #include "GameObject.h"
 #include "GOCow.h"
@@ -33,7 +33,7 @@ private:
   void positionCamera();
 
 public:
-  GamePlayer(Shape *shape, tTexture *texture, vec3 position, vec3 rotation, vec3 scale);
+  GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale);
 
   vec3 getCamPos();
   float getCamPhi();

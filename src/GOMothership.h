@@ -8,7 +8,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "tTexture.h"
+#include "Texture.h"
 #include "Material.h"
 #include "GameObject.h"
 #include "GOCow.h"
@@ -28,7 +28,7 @@ private:
   int maxCows;
 
 public:
-  GOMothership(Shape *shape, tTexture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, int maxCows);
+  GOMothership(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, int maxCows);
 
   void collect(GOCow *cow);
 };

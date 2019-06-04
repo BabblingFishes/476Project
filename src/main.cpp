@@ -23,7 +23,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "tTexture.h"
+#include "Texture.h"
 #include "Material.h"
 #include "SkyBox.h"
 #include "WindowManager.h"
@@ -85,7 +85,7 @@ public:
 	//assimp models
 	//Model pinetree;
 
-	tTexture *defaultTex;
+	Texture *defaultTex;
 
 	SkyBox *skybox;
 
@@ -380,7 +380,7 @@ public:
 		};
 		cubeMapTexture = createSky(resourceDirectory + "/",  faces);
 
-		defaultTex = new tTexture();
+		defaultTex = new Texture();
 		defaultTex->setFilename(resourceDirectory + "/grass.jpg");
 		defaultTex->init();
 		defaultTex->setUnit(0);
@@ -459,7 +459,7 @@ public:
 	}
 
 	// makes cows and places them randomly in the world
-	vector<GOCow> generateCows(Shape *shape, tTexture *texture) {
+	vector<GOCow> generateCows(Shape *shape, Texture *texture) {
 		vector<GOCow> cows;
 		for (int i = 0; i < NUMOBJS; i++) {
 			cows.push_back(GOCow(shape, texture, WORLD_SIZE - 40));
@@ -468,7 +468,7 @@ public:
 	}
 
 
-  vector<GameObject> generateMap(Shape *shape, tTexture *texture) {
+  vector<GameObject> generateMap(Shape *shape, Texture *texture) {
     vector<GameObject> mapObjs;
     int xPos, zPos;
 

@@ -1,4 +1,4 @@
-#include "tTexture.h"
+#include "Texture.h"
 #include "GLSL.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,19 +9,19 @@
 
 using namespace std;
 
-tTexture::tTexture() :
+Texture::Texture() :
 	filename(""),
 	tid(0)
 {
 
 }
 
-tTexture::~tTexture()
+Texture::~Texture()
 {
 
 }
 
-void tTexture::init()
+void Texture::init()
 {
 	// Load texture
 	int w, h, ncomps;
@@ -60,7 +60,7 @@ void tTexture::init()
 	stbi_image_free(data);
 }
 
-void tTexture::setWrapModes(GLint wrapS, GLint wrapT)
+void Texture::setWrapModes(GLint wrapS, GLint wrapT)
 {
 	// Must be called after init()
 	glBindTexture(GL_TEXTURE_2D, tid);
@@ -68,14 +68,14 @@ void tTexture::setWrapModes(GLint wrapS, GLint wrapT)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
 }
 
-void tTexture::bind(GLint handle)
+void Texture::bind(GLint handle)
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, tid);
 	glUniform1i(handle, unit);
 }
 
-void tTexture::unbind()
+void Texture::unbind()
 {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, 0);

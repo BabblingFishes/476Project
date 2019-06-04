@@ -8,7 +8,7 @@
 #include "Program.h"
 #include "MatrixStack.h"
 #include "Shape.h"
-#include "tTexture.h"
+#include "Texture.h"
 #include "Material.h"
 #include "GameObject.h"
 
@@ -27,10 +27,10 @@ private:
 
 public:
   //random constructor
-  GOCow(Shape *shape, tTexture *texture, int worldSize);
+  GOCow(Shape *shape, Texture *texture, int worldSize);
 
   //specific constructor
-  GOCow(Shape *shape, tTexture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
+  GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
   bool isCollected();
 

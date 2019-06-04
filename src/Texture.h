@@ -5,11 +5,11 @@
 #include <glad/glad.h>
 #include <string>
 
-class tTexture
+class Texture
 {
 public:
-	tTexture();
-	virtual ~tTexture();
+	Texture();
+	virtual ~Texture();
 	void setFilename(const std::string &f) { filename = f; }
 	void init();
 	void setUnit(GLint u) { unit = u; }
@@ -24,7 +24,7 @@ private:
 	int height;
 	GLuint tid;
 	GLint unit;
-	
+
 };
 
 #endif

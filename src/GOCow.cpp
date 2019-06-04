@@ -9,7 +9,7 @@ using namespace glm;
 using namespace irrklang;
 
 // random constructor
-GOCow::GOCow(Shape *shape, tTexture *texture, int worldSize) {
+GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
   this->shape = shape;
   this->texture = texture;
   radius = 0.5;
@@ -35,7 +35,7 @@ GOCow::GOCow(Shape *shape, tTexture *texture, int worldSize) {
 }
 
 // specific constructor
-GOCow::GOCow(Shape *shape, tTexture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
+GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity) {
   this->shape = shape;
   this->texture = texture;
   this->material = material;

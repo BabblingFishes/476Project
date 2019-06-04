@@ -3,7 +3,7 @@
 using namespace std;
 using namespace glm;
 
-GamePlayer::GamePlayer(Shape *shape, tTexture *texture, vec3 position, vec3 rotation, vec3 scale) {
+GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale) {
   this->shape = shape;
   this->texture = texture;
   this->material = material;
