@@ -2,7 +2,7 @@
 
 #define PI 3.14159
 
-#include <irrKlang/irrKlang.h>
+#include <irrKlang.h>
 
 using namespace std;
 using namespace glm;

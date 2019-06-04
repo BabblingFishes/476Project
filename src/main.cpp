@@ -14,7 +14,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
-#include <irrKlang/irrKlang.h>	
+#include <irrKlang.h>	
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
