@@ -1,5 +1,8 @@
 #include "GamePlayer.h"
 
+#define MAP_WIDTH 120
+#define MAP_LENGTH 162
+
 using namespace std;
 using namespace glm;
 
@@ -29,7 +32,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   positionCamera();
 }
 
-vec3 GamePlayer::getCamPos() { return camPosition; }
+
 float GamePlayer::getCamPhi() { return camPhi; }
 float GamePlayer::getCamTheta() { return camTheta; }
 
@@ -39,6 +42,7 @@ void GamePlayer::positionCamera() {
                             cos(camPhi) * cos(camTheta));
   camPosition = position - (cameraForward * camZoom);
 }
+vec3 GamePlayer::getCamPos() { return camPosition; }
 
 void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   //player model
@@ -89,10 +93,18 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
   vec3 xForce = playerLeft * moveMagn;
 
   //player controls
-  if (wasdIsDown[0]) netForce += zForce;
-  if (wasdIsDown[1]) netForce -= xForce;
-  if (wasdIsDown[2]) netForce -= zForce;
-  if (wasdIsDown[3]) netForce += xForce;
+    if (wasdIsDown[0]) {
+            netForce += zForce;
+    }
+    if (wasdIsDown[1]) {
+            netForce -= xForce;
+    }
+    if (wasdIsDown[2]) {
+            netForce -= zForce;
+    }
+    if (wasdIsDown[3]) {
+            netForce += xForce;
+    }
 
   move(timeScale);
 

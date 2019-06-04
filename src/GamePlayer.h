@@ -33,12 +33,16 @@ private:
   void positionCamera();
 
 public:
+
   GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale);
+
 
   vec3 getCamPos();
   float getCamPhi();
   float getCamTheta();
 
+  bool borderCollision(vec3 nextPos);
+    
   void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);

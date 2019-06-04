@@ -33,9 +33,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GamePlayer.h"
 #include "GOCow.h"
 #include "GOMothership.h"
-//assimp
-//#include "Shader.h"
-//#include "Model.h"
+#include "VFC.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -72,8 +70,13 @@ public:
 	const GLuint SHADOWMAP_WIDTH = 1024, SHADOWMAP_HEIGHT = 1024;
 	GLuint depthMap;
 
-	// map data
-	int *map;
+
+	//VFCing
+	bool CULL = true;
+	bool CULL_DEBUG = false;
+
+	//map data
+	int* map;
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
@@ -223,6 +226,55 @@ public:
 		//init GL programs
 		initShadowMapping(resourceDirectory);
 		initSkyBox(resourceDirectory);
+		initMap();
+	}
+
+	//init map from editor
+	void initMap() {
+		int scanned = 0;
+		int width, height, bpp;
+		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &width, &height, &bpp, 3);
+
+		cout << endl << "Map width: " << width << endl;
+		cout << "Map height: " << height << endl;
+		cout << "Area: " << height * width << endl;
+		cout << "Bytes per pixel: " << bpp << endl;
+
+		int arrlen = width * height * bpp;
+		map = (int*)malloc(arrlen * sizeof(int));
+		cout << "arr size: " << arrlen << endl;
+
+		int x = 0;
+		int y = 0;
+		int counter = 0;
+		for (int i = 0; i < arrlen; i += bpp) {
+			int r = int(rgb[i]);
+			int g = int(rgb[i + 1]);
+			int b = int(rgb[i + 2]);
+			if (counter > width - 1) {
+				counter = 0;
+				y = 0;
+				x++;
+			}
+			int xInd = height * 5 * x + 5 * y + 0;
+			int yInd = height * 5 * x + 5 * y + 1;
+			int rInd = height * 5 * x + 5 * y + 2;
+			int gInd = height * 5 * x + 5 * y + 3;
+			int bInd = height * 5 * x + 5 * y + 4;
+
+			map[xInd] = x;
+			map[yInd] = y;
+			map[rInd] = r;
+			map[gInd] = g;
+			map[bInd] = b;
+			//arr[x][y][0] = r;
+			//arr[x][y][1] = g;
+			//arr[x][y][2] = b;
+			//cout << endl << "x: " << x << "\ty: " << y << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
+			y++;
+			counter++;
+			scanned++;
+		}
 	}
 
 	//init map from editor
@@ -451,7 +503,7 @@ public:
 
 		//TODO replace below defaultTex with textures
 		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(10.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
+		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
 		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
@@ -467,7 +519,6 @@ public:
 		return cows;
 	}
 
-
   vector<GameObject> generateMap(Shape *shape, Texture *texture) {
     vector<GameObject> mapObjs;
     int xPos, zPos;
@@ -476,32 +527,33 @@ public:
       if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj2);
       }
       else {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj2);
 
         xPos = i;
         zPos = -MAP_LENGTH / 2;
-        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj3);
 
         zPos = MAP_LENGTH / 2;
-        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
         mapObjs.push_back(obj4);
       }
     }
 		//Tree lines within border. Each for loop is a line
+        // -MAP_WIDTH < x < -40, -20 < x < MAP_WIDTH, -28 < z < -32
         for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
           if (i > -20 || i < -40) {
             xPos = i;
@@ -511,10 +563,11 @@ public:
             else {
                 zPos = -30 - 2;
             }
-            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
             mapObjs.push_back(obj5);
           }
         }
+        // -MAP_WIDTH < x < 0, -2 < z < 2
         for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
           xPos = i;
           if (i % 2 == 0) {
@@ -523,10 +576,11 @@ public:
           else {
               zPos = 0 - 2;
           }
-          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
           mapObjs.push_back(obj6);
         }
-        for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= 3) {
+        // -2 < x < 2, -5 < z < MAP_LENGTH - 25
+        for (int i = ((MAP_LENGTH / 2) - 25); i >= 0; i -= 3) {
           zPos = i;
           if (i % 2 == 0) {
               xPos = 0 + 2;
@@ -534,7 +588,7 @@ public:
           else {
               xPos = 0 - 2;
           }
-          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
           mapObjs.push_back(obj7);
       }
 
@@ -617,7 +671,7 @@ public:
 	/***** Rendering *****/
 
 /* P - projection */
-	void setProjectionMatrix(shared_ptr<Program> curProg) {
+	void setProjectionMatrix_OLD(shared_ptr<Program> curProg) {
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		//glViewport(0, 0, width, height); ??
@@ -635,7 +689,7 @@ public:
   }
 
 /* V - camera view */
-  void setView(shared_ptr<Program> curProg) {
+  void setView_OLD(shared_ptr<Program> curProg) {
 		vec3 camPos = player->getCamPos();
 		glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
   	mat4 View = glm::lookAt(camPos, player->getPos(), vec3(0, 1, 0));
@@ -665,20 +719,26 @@ public:
 
 		if (shadowTexture) {
 			//mothership
-			mothership->getTexture()->bind(shadowTexture);
-			mothership->draw(curProg, Model);
+			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
+				mothership->getTexture()->bind(shadowTexture);
+				mothership->draw(curProg, Model);
+			}
 			//ground
 			ground->getTexture()->bind(shadowTexture);
 			ground->draw(curProg, Model);
 			//trees and such
 			for(objI = mapObjs.begin(); objI != mapObjs.end(); objI++) {
-				objI->getTexture()->bind(shadowTexture);
-			  objI->draw(curProg, Model);
+				if(!ViewFrustCull(objI->getPos(), objI->getRadius(), CULL)) {
+					objI->getTexture()->bind(shadowTexture);
+			  	objI->draw(curProg, Model);
+				}
 			}
 			//cows
 			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
-				cowI->getTexture()->bind(shadowTexture);
-			  cowI->draw(curProg, Model);
+				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
+					cowI->getTexture()->bind(shadowTexture);
+			  	cowI->draw(curProg, Model);
+				}
 			}
 			//player
 			player->getTexture()->bind(shadowTexture);
@@ -686,17 +746,22 @@ public:
 		}
 		else {
 			//mothership
-			mothership->draw(curProg, Model);
-
+			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
+				mothership->draw(curProg, Model);
+			}
 			//ground
 			ground->draw(curProg, Model);
 			//trees and such
 			for(objI = mapObjs.begin(); objI != mapObjs.end(); objI++) {
-			  objI->draw(curProg, Model);
+				if(!ViewFrustCull(objI->getPos(), objI->getRadius(), CULL)) {
+			  	objI->draw(curProg, Model);
+				}
 			}
 			//cows
 			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
-			  cowI->draw(curProg, Model);
+				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
+			  	cowI->draw(curProg, Model);
+				}
 			}
 			//player
 			player->draw(curProg, Model);
@@ -711,7 +776,7 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear framebuffer
 
 		skyProg->bind();
-		setProjectionMatrix(skyProg);
+		setProjectionMatrix_OLD(skyProg);
 		setSkyBoxView(skyProg);
 		//mat4 ident(1.0); // TODO ????
 		glDepthFunc(GL_LEQUAL);
@@ -760,8 +825,10 @@ public:
 		glUniform3f(shadowProg->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
 		glUniform3f(shadowProg->getUniform("lightClr"), 0.3f, 0.3f, 0.3f);
 		//render scene
-		setProjectionMatrix(shadowProg);
-		setView(shadowProg);
+		mat4 P = SetProjectionMatrix(shadowProg, windowManager, width, height);
+		mat4 V = SetView(shadowProg, player->getCamPos(), player->getPos());
+		ExtractVFPlanes(P, V);
+
 		mat4 lightS = lightP * lightV;
 		glUniformMatrix4fv(shadowProg->getUniform("LS"), 1, GL_FALSE, value_ptr(lightS));
 		//TODO: is there other uniform data that must be sent?
@@ -792,7 +859,7 @@ int main(int argc, char **argv) {
 
 	// Establish window
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(512, 512);
+	windowManager->init(1024, 1024);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 
