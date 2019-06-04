@@ -20,10 +20,10 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   netForce = vec3(0);
 
   material = new Material(
-    vec3(0.3294, 0.2235, 0.02745), //amb
-    vec3(0.7804, 0.5686, 0.11373), //dif
-    vec3(0.9922, 0.9412, 0.8078), //matSpec
-    27.90); //shine
+	vec3(0.1, 0.13, 0.2), //amb
+	vec3(0.337, 0.49, 0.275), //dif
+	vec3(0.14, 0.2, 0.8), //matSpec
+	27.90); //shine
 
   shipRadius = 1;
   camPhi = rotation.x;
@@ -65,7 +65,7 @@ void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
 /* moves the player and camera */
 //TODO this needs to be done real-time
 //TODO the View logic can probably be abstracted out
-void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
+void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight) {
   //TODO after implementing real-time, make these values constants
   float moveMagn = 0.01f; //force from player controls
   //float mass = 1; // player mass
@@ -78,9 +78,9 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
   rotation += vec3(0, rotSpeed, 0);
 
   // camera rotation
-  if (arrowIsDown[0]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+  if (arrowIsDown[0]) camPhi = max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
   if (arrowIsDown[1]) camTheta -= cameraSpeed;
-  if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+  if (arrowIsDown[2]) camPhi = min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
   if (arrowIsDown[3]) camTheta += cameraSpeed;
 
   //player orientation
@@ -106,7 +106,7 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
             netForce += xForce;
     }
 
-  move(timeScale);
+  move(timeScale, Mwidth, Mheight);
 
   // place the camera,pointed at the player
   positionCamera();
@@ -125,7 +125,7 @@ void GamePlayer::beamIn(GameObject *other) {
   vec3 dir = position - other->getPos();
   //TODO str / distance
   float dist = length(dir);
-  vec3 force = normalize(dir) * (float)(beamStrength / std::max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
+  vec3 force = normalize(dir) * (float)(beamStrength / max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
   other->addForce(force);
 
   //this...is very broken

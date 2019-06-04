@@ -43,7 +43,7 @@ public:
 
   bool borderCollision(vec3 nextPos);
     
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale);
+  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 

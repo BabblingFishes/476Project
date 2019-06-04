@@ -42,10 +42,6 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <glm/gtx/string_cast.hpp>
 
 #define DEBUG_MODE true
-#define NUMOBJS 11
-#define WORLD_SIZE 100
-#define MAP_WIDTH 120
-#define MAP_LENGTH 162
 
 using namespace std;
 using namespace glm;
@@ -73,8 +69,15 @@ public:
 	bool CULL = true;
 	bool CULL_DEBUG = false;
 
-	//map array
-	int* map;
+	//cow counter for the mothership
+	int numCows = 0;
+
+	//map width and height
+	int Mwidth, Mheight;
+
+	//default positions
+	vec3 playerPos;// = vec3(40.0, 0.0, -60.0);
+	vec3 MSPos;// = vec3(-20.0, 0.0, 20.0);
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
@@ -222,93 +225,86 @@ public:
 		//init GL programs
 		initShadowMapping(resourceDirectory);
 		initSkyBox(resourceDirectory);
-		initMap();
 	}
 
 	//init map from editor
-	void initMap() {
+	void initMap(vector<GOCow> *cows, vector<GameObject> *mapObjs) {
+		int* trees;
 		int scanned = 0;
-		int width, height, bpp;
-		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &width, &height, &bpp, 3);
+		int bpp;
+		unsigned char* rgb = stbi_load("../resources/Maps/Map.png", &Mwidth, &Mheight, &bpp, 3);
 
-		cout << endl << "Map width: " << width << endl;
-		cout << "Map height: " << height << endl;
-		cout << "Area: " << height * width << endl;
+		cout << endl << "Map width: " << Mwidth << endl;
+		cout << "Map height: " << Mheight << endl;
+		cout << "Area: " << Mheight * Mwidth << endl;
 		cout << "Bytes per pixel: " << bpp << endl;
 
-		int arrlen = width * height * bpp;
-		map = (int*)malloc(arrlen * sizeof(int));
-		cout << "arr size: " << arrlen << endl;
+		trees = (int*)malloc(Mwidth * Mheight * 2 * sizeof(int));
 
 		int x = 0;
 		int z = 0;
 		int counter = 0;
-		for (int i = 0; i < arrlen; i += bpp) {
+		for (int i = 0; i < Mwidth * Mheight * bpp; i += bpp) {
 			int r = int(rgb[i]);
 			int g = int(rgb[i + 1]);
 			int b = int(rgb[i + 2]);
-			if (counter > width - 1) {
+			int a = int(rgb[i + 3]);
+			if (counter > Mwidth - 1) {
 				counter = 0;
-				z = 0;
-				x++;
+				x = 0;
+				z++;
 			}
-			int xInd = height * 5 * x + 5 * z + 0;
-			int zInd = height * 5 * x + 5 * z + 1;
-			int rInd = height * 5 * x + 5 * z + 2;
-			int gInd = height * 5 * x + 5 * z + 3;
-			int bInd = height * 5 * x + 5 * z + 4;
 
-			map[xInd] = x;
-			map[zInd] = z;
-			map[rInd] = r;
-			map[gInd] = g;
-			map[bInd] = b;
+			//cout << r << " " << g << " " << b << " x:" << x << " z:" << z << endl;
+
+			char* current = RGBtoOBJ(r, g, b);
+			//cout << current << " x:" << x << " z:" << z << endl;
+
+			if (strcmp(current, "tree") == 0) {
+				mapObjs->push_back(GameObject(tree, defaultTex, 1, vec3(-x, 4.f, z), vec3(0), vec3(5.f), vec3(0)));
+			}
+			else if (strcmp(current, "cow") == 0) {
+				numCows++;
+				float min = -0.75, max = 0.75;
+				int range = max - min + 1;
+				float xRand = rand() % range + min;
+				float zRand = rand() % range + min;
+				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand));
+			}
+			else if (strcmp(current, "player") == 0) {
+				player->setPos(vec3(-x, 0, z));
+			}
+			else if (strcmp(current, "mothership") == 0) {
+				mothership->setPos(vec3(-x, 0, z));
+			}
+
+			/*if (strcmp(current, "empty") != 0) {
+				cout << current << " at x:" << x << " y:" << z << endl;
+			}*/
+
 			//arr[x][z][0] = r;
 			//arr[x][z][1] = g;
 			//arr[x][z][2] = b;
-			//cout << endl << "x: " << x << "\ty: " << y << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
-			z++;
+			//cout << endl << "x: " << x << "\ty: " << z << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
+			x++;
 			counter++;
 			scanned++;
 		}
 	}
     
     //Gives the obj based on the RGB value
-    string RGBtoOBJ(int R, int G, int B) {
+    char* RGBtoOBJ(int R, int G, int B) {
         //tree
         if (R == 0 && G == 255 && B == 0) { return "tree"; }
         //cow
-        if (R == 0 && G == 0 && B == 0) { return "cow"; }
+        else if (R == 0 && G == 0 && B == 0) { return "cow"; }
         //player
-        if (R == 0 && G == 0 && B == 255) { return "player"; }
+        else if (R == 0 && G == 0 && B == 255) { return "player"; }
         //mothership
-        if (R == 255 && G == 0 && B == 0) { return "mothership"; }
+        else if (R == 255 && G == 0 && B == 0) { return "mothership"; }
+		else { return "empty"; }
     }
     
-    //Go through the map array and get each obj shape and position
-    void readMap() {
-        for (int i = 0; i < (sizeof(map) / sizeof(int); i += 5) {
-            int x = i;
-            int z = i + 1;
-            int R = i + 2;
-            int G = i + 3;
-            int B = i + 4;
-            string curShape = RGBtoOBJ(R, G, B);
-            if (strcmp(curShape, "tree") == 0) {
-                mapObjs.push_back(GameObject(tree, texture, 1, vec3(x, 4.f, z), vec3(0), vec3(5.f), vec3(0)));
-            }
-            else if (strcmp(curShape, "cow") == 0) {
-                gameObjs.push_back(GOCow(cowShape, texture, x, z));
-            }
-            else if (strcmp(curShape, "player") == 0) {
-                player->setPos(vec3(x, 0, z));
-            }
-            else if (strcmp(curShape, "mothership") == 0) {
-                mothership->setPos(vec3(x, 0, z));
-            }
-        }
-    }
-
 	// initializes skybox program
 	void initSkyBox(const std::string& resourceDirectory) {
 		//init the skybox program
@@ -486,98 +482,13 @@ public:
 		playerShape->init();
 
 		//TODO replace below defaultTex with textures
-		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20.0, 0.0, 20.0), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
-		gameObjs = generateCows(cowShape, defaultTex);
-    mapObjs = generateMap(tree, defaultTex);
+		cout << "main " << Mwidth << " " << Mheight << endl;
+		player = new GamePlayer(playerShape, defaultTex, playerPos, vec3(0.0, -2.0, 0.0), vec3(0.0, 0.0, 0.0));
+		mothership = new GOMothership(sphere, defaultTex, 13, MSPos, vec3(0, 0, 0), vec3(15, 1, 15), numCows);
+		initMap(&gameObjs, &mapObjs);
+		ground = new Ground(cube, defaultTex, (float)Mwidth, (float)Mheight);
 		initQuad(); //quad for VBO
 	}
-
-	// makes cows and places them randomly in the world
-	vector<GOCow> generateCows(Shape *shape, Texture *texture) {
-		vector<GOCow> cows;
-		for (int i = 0; i < NUMOBJS; i++) {
-			cows.push_back(GOCow(shape, texture, WORLD_SIZE - 40));
-		}
-		return cows;
-	}
-
-  vector<GameObject> generateMap(Shape *shape, Texture *texture) {
-    vector<GameObject> mapObjs;
-    int xPos, zPos;
-
-    for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 4) {
-      if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
-        zPos = i;
-        xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj1);
-        xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj2);
-      }
-      else {
-        zPos = i;
-        xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj1);
-        xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj2);
-
-        xPos = i;
-        zPos = -MAP_LENGTH / 2;
-        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj3);
-
-        zPos = MAP_LENGTH / 2;
-        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj4);
-      }
-    }
-		//Tree lines within border. Each for loop is a line
-        // -MAP_WIDTH < x < -40, -20 < x < MAP_WIDTH, -28 < z < -32
-        for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
-          if (i > -20 || i < -40) {
-            xPos = i;
-            if (i % 2 == 0) {
-                zPos = -30 + 2;
-            }
-            else {
-                zPos = -30 - 2;
-            }
-            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-            mapObjs.push_back(obj5);
-          }
-        }
-        // -MAP_WIDTH < x < 0, -2 < z < 2
-        for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
-          xPos = i;
-          if (i % 2 == 0) {
-              zPos = 0 + 2;
-          }
-          else {
-              zPos = 0 - 2;
-          }
-          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-          mapObjs.push_back(obj6);
-        }
-        // -2 < x < 2, -5 < z < MAP_LENGTH - 25
-        for (int i = ((MAP_LENGTH / 2) - 25); i >= 0; i -= 3) {
-          zPos = i;
-          if (i % 2 == 0) {
-              xPos = 0 + 2;
-          }
-          else {
-              xPos = 0 - 2;
-          }
-          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-          mapObjs.push_back(obj7);
-      }
-
-    return mapObjs;
-  }
 
 
 	// geometry set up for a quad
@@ -633,7 +544,7 @@ public:
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
 	void update(double timeScale) {
-		player->update(wasdIsDown, arrowIsDown, timeScale);
+		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight);
 
 		vector<GOCow>::iterator cur;
 		for (cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
@@ -646,7 +557,7 @@ public:
 					cur->collide(player);
 					player->collide(&*cur);
 				}
-				cur->update(timeScale);
+				cur->update(timeScale, Mwidth, Mheight);
 			}
 		}
 	}
@@ -843,7 +754,7 @@ int main(int argc, char **argv) {
 
 	// Establish window
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(1024, 1024);
+	windowManager->init(1050, 1050);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 
@@ -851,15 +762,9 @@ int main(int argc, char **argv) {
 	application->initTex(resourceDir);
 	application->initGeom(resourceDir);
 
-	float timeScale;
+	float timeScale = 0;
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
-
-		/*high_resolution_clock::time_point t1;
-		high_resolution_clock::time_point t2;
-		t1 = high_resolution_clock::now();
-		printf(t1);*/
-
 		auto start = std::chrono::steady_clock::now();
 
 		// update game state

@@ -1,8 +1,5 @@
 #include "GameObject.h"
 
-#define MAP_WIDTH 120
-#define MAP_LENGTH 162
-
 using namespace std;
 using namespace glm;
 
@@ -51,86 +48,51 @@ void GameObject::addForce(vec3 force) {
 }
 
 // called once per frame
-void GameObject::update(float timeScale) {
-  move(timeScale);
+void GameObject::update(float timeScale, int Mwidth, int Mheight) {
+  move(timeScale, Mwidth, Mheight);
 }
 
 //Checks if player's next movement is into a tree border, returns true if collision
-bool GameObject::borderCollision(vec3 nextPos) {
+bool GameObject::borderCollision(vec3 nextPos, int Mwidth, int Mheight) {
     //Get the x and z values of the next position
     float nextX = nextPos.x;
     float nextZ = nextPos.z;
+	int hwidth = -Mwidth;
+	int hheight = Mheight /2;
     //cout << "nextX = " << nextX << ", nextZ = " << nextZ << endl;
     //cout << "velocity.z = " << velocity.z << endl;
     //Translate map width and heights to pixel space so it's easier to work with
-    int width = MAP_WIDTH / 2;
-    int length = MAP_LENGTH / 2;
     //Check outer borders
-    if (nextX < -width + 2 || width - 2 < nextX) {
+    if (-nextX < 6 || -nextX > Mwidth-9) { // left side, right side
         velocity *= vec3(-1, 1, 1);
         //cout << "nextX = " << nextX << ", nextZ = " << nextZ << endl;
         //cout << "OUTSIDE WIDTH: " << endl;
         return true;
     }
-    if (nextZ < -length + 2 || nextZ > length - 2) {
+    if (nextZ < 6 || nextZ > Mheight - 6) { //bottom, top
         velocity *= vec3(1, 1, -1);
         //cout << "OUTSIDE LENGTH" << endl;
         return true;
-    }
-    //Check inner borders, one if block per for loop block in generateMap()
-    // -width < x < -40, -20 < x < width, -32 < z < -28
-    if (nextZ <= -26 && nextZ >= -34) {
-        if (nextX <= -40 || nextX >= -21) {
-            if (nextZ < -26.3 && nextZ > -33.7) {
-                velocity *= vec3(-1, 1, 1);
-            }
-            else velocity *= vec3(1, 1, -1);
-            //cout << "INNER FIRST" << endl;
-            return true;
-        }
-    }
-    // -width < x < 0, -2 < z < 2
-    if (nextZ >= -4 && nextZ <= 4) {
-        if (nextX <= 2) {
-            //velocity *= vec3(1, 1, -1);
-            if (nextZ > -3.7 && nextZ < -3.7) {
-                velocity *= vec3(-1, 1, 1);
-            }
-            else velocity *= vec3(1, 1, -1);
-            //cout << "X = " << position.x << ", Y = " << position.y << ", Z = " <<position.z << endl;
-            //cout << "INNER SECOND" << endl;
-            return true;
-        }
-    }
-    // -2 < x < 2, -5 < z < length - 25
-    if (nextX >= -4 && nextX <= 4) {
-        if (nextZ >= -1 && nextZ <= length - 24) {
-            if (nextX > -1.7 && nextX < 1.7) {
-                velocity *= vec3(1, 1, -1);
-             }
-            else velocity *= vec3(-1, 1, 1);
-            //cout << "X = " << position.x << ", Y = " << position.y << ", Z = " <<position.z << endl;
-            //cout << "INNER THIRD" << endl;
-            return true;
-        }
     }
     //cout << "NO COLLISION" << endl;
     return false;
 }
 
 // uses physics to decide new position
-void GameObject::move(float timeScale) {
+void GameObject::move(float timeScale, int Mwidth, int Mheight) {
   //TODO: add gravity
   //TODO: spin?
 
   velocity *= 1 - (0.02f * timeScale); // ""friction"" TODO
     velocity += netForce * timeScale / mass;
+	//cout << position.x << " " << position.z << endl;
     
-    if (borderCollision(position + velocity)){
-        //cout << "X = " << position.x << ", Y = " << position.y << ", Z = " <<position.z << endl;
-        //cout << velocity.x << velocity.y << velocity.z << endl;
+   if (borderCollision(position + velocity, Mwidth, Mheight)){
+  //      //cout << "X = " << position.x << ", Y = " << position.y << ", Z = " <<position.z << endl;
+  //      //cout << velocity.x << velocity.y << velocity.z << endl;
     }
-    position += velocity;
+	position += velocity;
+    
   netForce = vec3(0);
 
   /* if(position.y > 0) { // ""gravity"" TODO
