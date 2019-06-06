@@ -36,7 +36,7 @@ void main() {
 		float shade = testShadow(fPosLS);
 
 		//blinn-phong shading
-		float fallOff = distance(lightDir, fragNor) / 25.0f;
+		float fallOff = distance(lightDir, fragNor) / 8.0f;
     //float fallOff = 1; //TODO
 		vec3 normal = normalize(fragNor);
     vec3 half_norm = normalize(vec3(halfVec));

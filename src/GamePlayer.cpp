@@ -72,7 +72,7 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, in
   float rotSpeed = 0.1f * timeScale; // UFO spin speed
 
   //TODO drift camera too? or is that bad for motion sickness
-  float cameraSpeed = 0.02f * timeScale; //camera rotation acceleration
+  float cameraSpeed = 0.035f * timeScale; //camera rotation acceleration
 
   //spin UFO
   rotation += vec3(0, rotSpeed, 0);

@@ -18,7 +18,7 @@ GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
 
   material = new Material(
     vec3(0.04, 0.04, 0.02), //amb
-    vec3(0.2, 0.2, 0.1), //dif
+    vec3(1.0, 1.0, 1.0), //dif
     vec3(0.05, 0.04, 0.04), //matSpec
     .005); //shine
 

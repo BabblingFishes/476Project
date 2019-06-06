@@ -1,7 +1,7 @@
 #include "VFC.h"
 
 #define PLAYER_CAM_DIST 60.0f
-#define CULL_DIST 100.0f
+#define CULL_DIST 75.0f
 #define VFC_BUF 6
 
 using namespace std;
