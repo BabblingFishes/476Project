@@ -12,6 +12,7 @@
 #include "Material.h"
 #include "GameObject.h"
 #include "GOCow.h"
+#include "GOHaybale.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -43,11 +44,13 @@ public:
 
   bool borderCollision(vec3 nextPos);
     
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale);
+  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 
   void collide(GOCow *cow);
+
+  void collide(GOHaybale *hay);
 
   void beamIn(GameObject *other);
 };
