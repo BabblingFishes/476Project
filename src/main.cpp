@@ -15,6 +15,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
+#include <irrklang/irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
@@ -56,6 +57,7 @@ Winter 2017 - ZJW (Piddington texture write)
 using namespace std;
 using namespace glm;
 using namespace std::chrono;
+using namespace irrklang;
 
 class Application : public EventCallbacks {
 public:
@@ -876,6 +878,10 @@ public:
 
 int main(int argc, char **argv) {
 	//set seed for rand operations
+
+	ISoundEngine* engine = createIrrKlangDevice();
+	engine->play2D("../resources/Audio/Night.mp3", true);
+
 	srand(time(0));
 
 	// Locate the resource directory
