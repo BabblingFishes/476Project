@@ -24,7 +24,7 @@ private:
 	int height;
 	GLuint tid;
 	GLint unit;
-	
+
 };
 
 #endif
