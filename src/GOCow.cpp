@@ -3,7 +3,7 @@
 #define PI 3.14159
 #define NUMOBJS 11
 
-#include <irrKlang.h>
+#include <irrklang/irrKlang.h>
 
 using namespace std;
 using namespace glm;
