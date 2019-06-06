@@ -33,6 +33,10 @@ int GOMothership::getCollectedCows() {
 	return cowsCollected;
 }
 
+int GOMothership::getCollectedHay() {
+	return hayCollected;
+}
+
 void GOMothership::collect(GOCow* cow) {
 	if (!(cow->isCollected())) {
 		cow->collect();

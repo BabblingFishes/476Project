@@ -833,30 +833,32 @@ public:
 	}
 
 	void renderGUI() {
-
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
+
 		if (show_UI)
 		{
-			auto start = std::chrono::steady_clock::now();
-			static float f = 0.0f;
-			static int counter = 0;
-			float timers = 0;
-
-			ImGui::Begin("Holy Cow");
-
-			ImGui::SameLine();
+			ImGui::Begin("Holy Cow", NULL, window_flags);
 
 			int collCows = mothership->getCollectedCows();
-			ImGui::Text("Cows Collected %d / %d", collCows, numCows);
+			int collHay = mothership->getCollectedHay();
+			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
 
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("Hay Collected: %d", collHay);
+
+			int cowpoints = collCows * 10;
+			int haypoints = collHay * 7;
+			int totalpoints = cowpoints - haypoints;
+			ImGui::Text("Points earned: %d", totalpoints);
+			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
+
 		ImGui::Render();
-		int display_w, display_h;
+		int display_w = 200, display_h = 300;
 		glfwGetFramebufferSize(windowManager->getHandle(), &display_w, &display_h);
 		glViewport(0, 0, display_w, display_h);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
