@@ -85,6 +85,6 @@ void GOCow::collect() {
 	ISoundEngine* engine = createIrrKlangDevice();
 	if (!engine)
 		return;
-	engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
+	engine->play2D("../resources/Audio/Moo.ogg");
   collected = true;
 }

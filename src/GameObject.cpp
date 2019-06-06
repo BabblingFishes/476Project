@@ -70,15 +70,15 @@ bool GameObject::borderCollision(vec3 nextPos, int Mwidth, int Mheight) {
         velocity *= vec3(-1, 1, 1);
         //cout << "nextX = " << nextX << ", nextZ = " << nextZ << endl;
         //cout << "OUTSIDE WIDTH: " << endl;
-		ISoundEngine* engine = createIrrKlangDevice();
-		engine->play2D("../resources/Audio/Boing.mp3");
+		//ISoundEngine* engine = createIrrKlangDevice();
+		//engine->play2D("../resources/Audio/Boing.mp3");
         return true;
     }
     if (nextZ < 6 || nextZ > Mheight - 6) { //bottom, top
         velocity *= vec3(1, 1, -1);
         //cout << "OUTSIDE LENGTH" << endl;
-		ISoundEngine* engine = createIrrKlangDevice();
-		engine->play2D("../resources/Audio/Boing.mp3");
+		//ISoundEngine* engine = createIrrKlangDevice();
+		//engine->play2D("../resources/Audio/Boing.mp3");
         return true;
     }
     //cout << "NO COLLISION" << endl;
