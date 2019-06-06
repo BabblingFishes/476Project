@@ -24,7 +24,7 @@ GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   //pick a random rotation
   rotation = vec3(0 , (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
 
-  scale = vec3(0.5);
+  scale = vec3(0.85);
   velocity = vec3(0.0);
   collected = false;
 }
@@ -62,7 +62,7 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     Model->rotate(rotation.y, vec3(0, 1, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->scale(scale);
-	Model->translate(vec3(0, -0.95, 0)); //TODO: remove this with new plane
+	Model->translate(vec3(0, -0.65, 0)); //TODO: remove this with new plane
     if(collected) { //DEBUG
       glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
       glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);

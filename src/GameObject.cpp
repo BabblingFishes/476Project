@@ -63,7 +63,7 @@ bool GameObject::borderCollision(vec3 nextPos, int Mwidth, int Mheight) {
     //cout << "velocity.z = " << velocity.z << endl;
     //Translate map width and heights to pixel space so it's easier to work with
     //Check outer borders
-    if (-nextX < 6 || -nextX > Mwidth-9) { // left side, right side
+    if (-nextX < 6 || -nextX > Mwidth-6) { // left side, right side
         velocity *= vec3(-1, 1, 1);
         //cout << "nextX = " << nextX << ", nextZ = " << nextZ << endl;
         //cout << "OUTSIDE WIDTH: " << endl;

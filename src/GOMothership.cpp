@@ -29,6 +29,10 @@ GOMothership::GOMothership(Shape *shape, Texture *texture, float radius, vec3 po
   this->maxHay = maxHay;
 }
 
+int GOMothership::getCollectedCows() {
+	return cowsCollected;
+}
+
 void GOMothership::collect(GOCow* cow) {
 	if (!(cow->isCollected())) {
 		cow->collect();

@@ -11,6 +11,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <glad/glad.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <chrono>
 #include <ctime>
 #include <ratio>
@@ -39,6 +40,11 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOHaybale.h"
 #include "VFC.h"
 
+//gui
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_impl_glfw.h>
+
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
@@ -53,6 +59,9 @@ using namespace std::chrono;
 
 class Application : public EventCallbacks {
 public:
+	//ui stuff
+	bool show_UI = true;
+	float timer = 0;
 
 	WindowManager * windowManager = nullptr;
 
@@ -241,7 +250,7 @@ public:
 	void initMap(vector<GOCow> *cows, vector<GOBorder> *btrees, vector<GOTree> *trees, vector<GOHaybale> *hay) {
 		int scanned = 0;
 		int bpp;
-		unsigned char* rgb = stbi_load("../resources/Maps/Map.png", &Mwidth, &Mheight, &bpp, 3);
+		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &Mwidth, &Mheight, &bpp, 3);
 
 		cout << endl << "Map width: " << Mwidth << endl;
 		cout << "Map height: " << Mheight << endl;
@@ -282,9 +291,11 @@ public:
 				trees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 3, z + zRand), vec3(0, 180 * xRand, 0), vec3(5.f + zRand)));
 			}
 			else if (strcmp(current, "cow") == 0) {
+				numCows++;
 				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand));
 			}
 			else if (strcmp(current, "haybale") == 0) {
+				numHay++;
 				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
 			}
 			else if (strcmp(current, "player") == 0) {
@@ -666,10 +677,10 @@ public:
 
 		if (shadowTexture) {
 			//mothership
-			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
+			//if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
 				mothership->getTexture()->bind(shadowTexture);
 				mothership->draw(curProg, Model);
-			}
+			//}
 			//barn
 			if (!ViewFrustCull(barn->getPos(), barn->getRadius(), CULL)) {
 				barn->getTexture()->bind(shadowTexture);
@@ -821,10 +832,43 @@ public:
 		shadowProg->unbind();
 	}
 
+	void renderGUI() {
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		if (show_UI)
+		{
+			auto start = std::chrono::steady_clock::now();
+			static float f = 0.0f;
+			static int counter = 0;
+			float timers = 0;
+
+			ImGui::Begin("Holy Cow");
+
+			ImGui::SameLine();
+
+			int collCows = mothership->getCollectedCows();
+			ImGui::Text("Cows Collected %d / %d", collCows, numCows);
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
+		}
+		ImGui::Render();
+		int display_w, display_h;
+		glfwGetFramebufferSize(windowManager->getHandle(), &display_w, &display_h);
+		glViewport(0, 0, display_w, display_h);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+
 	void render() {
 		if (shadowsEnabled) renderShadowDepth();
 		renderSkyBox();
 		renderScene();
+
+		
+		renderGUI();
 	}
 };
 
@@ -851,6 +895,14 @@ int main(int argc, char **argv) {
 	application->initTex(resourceDir);
 	application->initGeom(resourceDir);
 
+	//gui stuff
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	
+	ImGui_ImplGlfw_InitForOpenGL(windowManager->getHandle(), true);
+	ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui::StyleColorsDark();
+
 	float timeScale = 0;
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
@@ -872,6 +924,9 @@ int main(int argc, char **argv) {
 
 		//cout << timeScale << endl; //DEBUG
 	}
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
 
 	// Quit program.
 	windowManager->shutdown();
