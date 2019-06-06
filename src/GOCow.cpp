@@ -6,7 +6,7 @@
 using namespace std;
 using namespace glm;
 
-// random constructor
+
 GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   this->shape = shape;
   this->texture = texture;
@@ -14,13 +14,12 @@ GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   mass = 1;
 
   material = new Material(
-    vec3(0.1745, 0.01175, 0.01175), //amb
-    vec3(0.61424, 0.04136, 0.04136), //dif
-    vec3(0.0727811, 0.0626959, 0.0626959), //matSpec
-    27.90); //shine
+    vec3(0.04, 0.04, 0.02), //amb
+    vec3(0.2, 0.2, 0.1), //dif
+    vec3(0.05, 0.04, 0.04), //matSpec
+    .005); //shine
 
-  //pick some random position
-  position = vec3(x, 0, z);
+  position = vec3(x, -1, z);
 
   //pick a random rotation
   rotation = vec3(0 , (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
@@ -63,6 +62,7 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     Model->rotate(rotation.y, vec3(0, 1, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->scale(scale);
+	Model->translate(vec3(0, -0.95, 0)); //TODO: remove this with new plane
     if(collected) { //DEBUG
       glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
       glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);

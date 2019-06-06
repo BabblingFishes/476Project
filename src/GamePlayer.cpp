@@ -23,7 +23,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
 	vec3(0.1, 0.13, 0.2), //amb
 	vec3(0.337, 0.49, 0.275), //dif
 	vec3(0.14, 0.2, 0.8), //matSpec
-	27.90); //shine
+	25); //shine
 
   shipRadius = 1;
   camPhi = rotation.x;
@@ -116,6 +116,12 @@ void GamePlayer::collide(GOCow *cow) {
     if(!cow->isCollected()) {
         beamIn(cow);
     }
+}
+
+void GamePlayer::collide(GOHaybale* hay) {
+	if (!hay->isCollected()) {
+		beamIn(hay);
+	}
 }
 
 //moves an object towards the gravitation beam
