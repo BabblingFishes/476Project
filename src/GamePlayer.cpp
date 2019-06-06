@@ -7,9 +7,16 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   this->shape = shape;
   this->texture = texture;
   this->material = material;
-  radius = 10; //this is the beam radius
+  radius = 5; //this is the beam radius
+  shipRadius = shape->getWidth() * scale.x / 2.0;
+  height = shape->getHeight() * scale.y;
   mass = 1;
-  this->position = position + vec3(0, 1, 0); //this baby flies
+
+  //TODO we need a second, attached shape for the UFO:
+  //  pos/rot/scale that updates when this updates
+  // accurate position w/r/t spinning (currently only a visual flair)
+  //  cylinder collisions with cows
+  this->position = position;
   this->rotation = rotation;
   this->velocity = velocity;
   this->scale = scale;
@@ -23,7 +30,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
     27.90); //shine
 
   shipRadius = 1;
-  camPhi = rotation.x;
+  camPhi = 0.2;
   camTheta = rotation.y;
   camZoom = 10;
   positionCamera();
@@ -37,13 +44,14 @@ void GamePlayer::positionCamera() {
   vec3 cameraForward = vec3(cos(camPhi) * sin(camTheta),
                             -sin(camPhi),
                             cos(camPhi) * cos(camTheta));
-  camPosition = position - (cameraForward * camZoom);
+  camPosition = position + vec3(0, height / 2, 0) - (cameraForward * camZoom);
 }
 
 void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   //player model
   Model->pushMatrix();
-  Model->translate(position);
+  Model->translate(position + vec3(0, height / 2, 0));
+  //Model->translate(position);
   Model->rotate(rotation.x, vec3(1, 0, 0));
   Model->rotate(rotation.z, vec3(0, 0, 1));
   Model->rotate(rotation.y, vec3(0, 1, 0));
@@ -64,7 +72,6 @@ void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
 void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
   //TODO after implementing real-time, make these values constants
   float moveMagn = 0.01f; //force from player controls
-  //float mass = 1; // player mass
   float rotSpeed = 0.1f * timeScale; // UFO spin speed
 
   //TODO drift camera too? or is that bad for motion sickness
@@ -74,7 +81,7 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
   rotation += vec3(0, rotSpeed, 0);
 
   // camera rotation
-  if (arrowIsDown[0]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+  if (arrowIsDown[0]) camPhi = std::max(camPhi - cameraSpeed, 0.01f); // no clipping thru the floor
   if (arrowIsDown[1]) camTheta -= cameraSpeed;
   if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
   if (arrowIsDown[3]) camTheta += cameraSpeed;
@@ -108,9 +115,9 @@ void GamePlayer::collide(GOCow *cow) {
 
 //moves an object towards the gravitation beam
 void GamePlayer::beamIn(GameObject *other) {
-  float beamStrength = 0.01;
+  float beamStrength = 0.05;
 
-  vec3 dir = position - other->getPos();
+  vec3 dir = position + vec3(0, height, 0) - other->getPos();
   //TODO str / distance
   float dist = length(dir);
   vec3 force = normalize(dir) * (float)(beamStrength / std::max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?

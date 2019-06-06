@@ -33,8 +33,8 @@ bool Ground::isColliding(GameObject *gameObj) {
 
 void Ground::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
-    Model->translate(vec3(0, -2, 0));
-    Model->scale(vec3(width, 1, length)); //TODO
+    Model->translate(vec3(0, 0, 0)); //TODO
+    Model->scale(vec3(width, 0, length));
     material->draw(prog);
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);

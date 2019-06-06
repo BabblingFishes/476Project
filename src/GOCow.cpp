@@ -9,7 +9,6 @@ using namespace glm;
 GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
   this->shape = shape;
   this->texture = texture;
-  radius = 0.5;
   mass = 1;
 
   material = new Material(
@@ -18,15 +17,24 @@ GOCow::GOCow(Shape *shape, Texture *texture, int worldSize) {
     vec3(0.0727811, 0.0626959, 0.0626959), //matSpec
     27.90); //shine
 
+  scale = vec3(0.5);
+
+  // compute the radius as the widest part of the shape
+  float width = shape->getWidth() * scale.x;
+  float length = shape->getLength() * scale.z;
+  if (width >= length) radius = width / 2.0;
+  else radius = length / 2.0;
+
+  //compute the height from the shape
+  height = shape->getHeight() * scale.y;
+
   //pick some random position
   int randXPos = (((float)rand() / (RAND_MAX)) * worldSize * 2) - worldSize;
   int randZPos = (((float)rand() / (RAND_MAX)) * worldSize * 2) - worldSize;
-  position = vec3(randXPos, 0, randZPos);
+  position = vec3(randXPos, 5, randZPos);
 
-  //pick a random rotation
+  //pick a random Y rotation
   rotation = vec3(0 , (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
-
-  scale = vec3(0.5);
   velocity = vec3(0.0);
   collected = false;
 }
@@ -45,18 +53,21 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
   collected = false;
 }
 
-/*bool GOCow::checkInGoal(vec3 MSpos, float MSrad) {
-    if (length(MSpos - position) < MSrad) {
-        inGoal = true;
-    }
-    else {
-        inGoal = false;
-    }
-}*/
+bool GOCow::isCollected() { return collected; }
 
-//bool GOCow::isInGoal()   {   return inGoal;   }
+// sphere collision for cows
+bool GOCow::isColliding(GOCow *other) {
+  return length(getMidPt() - other->getMidPt()) < (radius + other->getRadius());
+}
 
-bool GOCow::isCollected()   {   return collected;   }
+// cylinder @ cylinder collision
+bool GOCow::isColliding(GameObject *other) {
+  vec3 oPos = other->getPos();
+  float oHgt = other->getHeight();
+  return position.y - height < oPos.y + oHgt
+    && oPos.y - oHgt < position.y + height
+    && length(vec2(oPos.x, oPos.z) - vec2(position.x, position.z)) < (radius + other->getRadius());
+}
 
 void GOCow::update(float timeScale) {
   float moveMagn = 0.0001f; //walkin' power
@@ -67,27 +78,26 @@ void GOCow::update(float timeScale) {
   move(timeScale);
 }
 
-void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
-  Model->pushMatrix();
-    Model->translate(position);
-    Model->rotate(rotation.x, vec3(1, 0, 0));
-    Model->rotate(rotation.y, vec3(0, 1, 0));
-    Model->rotate(rotation.z, vec3(0, 0, 1));
-    Model->scale(scale);
-    if(collected) { //DEBUG
-      glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
-      glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
-      glUniform3f(prog->getUniform("matSpec"), 0.14, 0.2, 0.8);
-      glUniform1f(prog->getUniform("shine"), 120.0);
-    }
-    else {
-      material->draw(prog);
-    }
-    glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-    shape->draw(prog);
-  Model->popMatrix();
+void GOCow::collect() {
+  if (!collected) {
+    collected = true;
+    material = new Material(
+      vec3(0.02, 0.04, 0.2), //amb
+      vec3(0.0, 0.16, 0.9), //dif
+      vec3(0.14, 0.2, 0.8), //matSpec
+      120.0);
+  }
 }
 
-void GOCow::collect() {
-  collected = true;
+void GOCow::collide(GOCow *other) {
+  float bounce = 0.75; //TODO see bounce constant in GameObject::move()
+  float oBounce = 0.75;
+  vec3 momentum = velocity * mass;
+  vec3 oMomentum = other->getVel() * other->getMass();
+
+}
+
+/* catchall for other objs */
+void GOCow::collide(GameObject *other) {
+  return;
 }

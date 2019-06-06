@@ -34,10 +34,15 @@ public:
 
   bool isCollected();
 
+  bool isColliding(GOCow *other);
+  bool isColliding(GameObject *other);
+
   void update(float timeScale);
-  void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
   void collect();
+
+  void collide(GOCow *other);
+  void collide(GameObject *other);
 };
 
 #endif

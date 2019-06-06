@@ -8,18 +8,23 @@ uniform vec3 matAmb, matDif, matSpec;
 uniform float shine;
 
 void main() {
-	//float fallOff = distance(lightDir, fragPos);
+  // H = (V + L) / ||V + L||
+  // diffuse = matDif * dot(N, L) * Ic
+  // specular = matSpec * pow(dot(H, N), shine) * Ic
+  // ambient = matAmb
+  //color = diffuse + specular + ambient
+
   float fallOff = distance(lightDir, fragPos) / 50.0f;
 	vec3 N = normalize(fragNor);
 	vec3 L = normalize(lightDir - fragPos);
 	vec3 V = normalize(-fragPos);
 
 	vec3 ambient = matAmb;
-	float intensity = max(dot(N, L), 0.0); //previously L, N
+	float intensity = max(dot(N, L), 0.0);
 	vec3 diffuse = matDif * intensity;
 	vec3 specular = vec3(0.0);
 	if(intensity > 0.0) {
-		specular = matSpec * pow(max(dot(normalize(L + V), N), 0.0), shine);
+		specular = matSpec * pow(max(dot(normalize(V + L), N), 0.0), shine);
 	}
 
 	vec3 tempColor = (specular + diffuse + ambient) * lightClr / fallOff;

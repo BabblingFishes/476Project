@@ -36,22 +36,24 @@ void main() {
 		float shade = testShadow(fPosLS);
 
 		//blinn-phong shading
-		float fallOff = distance(lightDir, fragNor) / 25.0f;
-    //float fallOff = 1; //TODO
+		//float fallOff = distance(lightDir, fragNor) / 25.0f;
+    //float fallOff = dot(lightPos, lightDir) / 25.0f; //TODO <---
+    float fallOff = 0.1;
 		vec3 normal = normalize(fragNor);
     vec3 half_norm = normalize(vec3(halfVec));
     vec3 L_norm = normalize(vec3(lightDir));
 
     vec3 diffuseRefl = matDif * max(0, dot(normal, L_norm));
     //vec3 specularRefl = matSpec * pow(max(dot(normal, half_norm), 0.0), shine);
-    vec3 specularRefl = matSpec * pow(max(dot(half_norm, normal), 0.0), shine);
+    vec3 specularRefl = matSpec * pow(max(dot(normal, half_norm), 0.0), shine);
     vec3 ambientRefl = matAmb;
 
-    vec3 ReflColor = (ambientRefl + diffuseRefl + specularRefl) * lightClr / fallOff;
+    vec4 ReflColor = vec4((ambientRefl + diffuseRefl + specularRefl) * lightClr / fallOff, 1.0);
 
     //color = amb*(texColor0) + (1.0-Shade)*texColor0*BaseColor;
 		//color = 0.3 * (texColor0) + (1.0 - shade) * texColor0 * vec4(vColor, 1.0);
-		//TODO currently just showing blinn-phong
-		color = vec4(ReflColor, 1.0);
 
+		color = ReflColor; //blinn-phong
+    //color = texColor0 * (1.0 - shade);
+    //color = vec4(half_norm, 1.0);
 }

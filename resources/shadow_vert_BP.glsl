@@ -1,4 +1,4 @@
-#version  330 core
+#version 330 core
 layout(location = 0) in vec4 vertPos;
 layout(location = 1) in vec3 vertNor;
 layout(location = 2) in vec2 vertTex;
@@ -27,11 +27,12 @@ void main() {
 
   fragNor = (M * vec4(vertNor, 0.0)).xyz; //normal
 
-  lightDir = lightPos - (M * vertPos).xyz;
-  vec3 eye = camPos - ((M * vertPos).xyz);
+  vec3 fragPos = (M * vertPos).xyz;
 
-  //halfVec = normalize(normalize(eye) + normalize(lightDir));
-  halfVec = eye + lightDir;
+  lightDir = lightPos - fragPos;
+
+  vec3 eye = camPos - fragPos;
+  halfVec = normalize(normalize(eye) + normalize(lightDir));
 
   fPos = M * vertPos; //worldspace pos
   vTexCoord = vertTex; //texture coords

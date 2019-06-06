@@ -361,7 +361,7 @@ public:
 
 		// Initialize the obj mesh VBOs etc
 		cowShape = new Shape();
-		cowShape->loadMesh(resourceDirectory + "/bunny.obj");
+		cowShape->loadMesh(resourceDirectory + "/dog.obj");
 		cowShape->resize();
 		cowShape->init();
 
@@ -377,7 +377,7 @@ public:
 		cube->init();
 
 		sphere = new Shape();
-    sphere->loadMesh(resourceDirectory + "/sphere.obj");
+    sphere->loadMesh(resourceDirectory + "/sphere_tex.obj"); //sphere_tex
     sphere->resize();
     sphere->init();
 
@@ -393,8 +393,8 @@ public:
 
 		//TODO replace below defaultTex with textures
 		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(10.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
+		player = new GamePlayer(playerShape, defaultTex, vec3(10.0, 20.0, 0.0), vec3(0.0), vec3(1.0));
+		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 15, 15), NUMOBJS);
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
 		initQuad(); //quad for VBO
@@ -418,28 +418,28 @@ public:
       if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
         mapObjs.push_back(obj2);
       }
       else {
         zPos = i;
         xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj1 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
         mapObjs.push_back(obj1);
         xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj2 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
         mapObjs.push_back(obj2);
 
         xPos = i;
         zPos = -MAP_LENGTH / 2;
-        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj3 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
         mapObjs.push_back(obj3);
 
         zPos = MAP_LENGTH / 2;
-        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+        GameObject obj4 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
         mapObjs.push_back(obj4);
       }
     }
@@ -453,7 +453,7 @@ public:
             else {
                 zPos = -30 - 2;
             }
-            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+            GameObject obj5 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
             mapObjs.push_back(obj5);
           }
         }
@@ -465,7 +465,7 @@ public:
           else {
               zPos = 0 - 2;
           }
-          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          GameObject obj6 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
           mapObjs.push_back(obj6);
         }
         for (int i = ((MAP_LENGTH / 2) - 25); i >= -5; i -= 3) {
@@ -476,7 +476,7 @@ public:
           else {
               xPos = 0 - 2;
           }
-          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f), vec3(0));
+          GameObject obj7 = GameObject(shape, texture, vec3(xPos, 0.f, zPos), vec3(0), vec3(5.f));
           mapObjs.push_back(obj7);
       }
 
@@ -519,13 +519,12 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); //TODO GL_REPEAT?
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
 
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 			cout << "Error setting up frame buffer - exiting" << endl;
 			exit(0);
 		}
@@ -580,7 +579,7 @@ public:
   void setView(shared_ptr<Program> curProg) {
 		vec3 camPos = player->getCamPos();
 		glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
-  	mat4 View = glm::lookAt(camPos, player->getPos(), vec3(0, 1, 0));
+		mat4 View = glm::lookAt(camPos, player->getMidPt(), vec3(0, 1, 0));
   	glUniformMatrix4fv(curProg->getUniform("V"), 1, GL_FALSE, value_ptr(View));
   }
 
@@ -677,7 +676,7 @@ public:
 		//render scene
 		depthProg->bind();
 		lightP = setOrthoMatrix(depthProg);
-		lightV = setLightView(depthProg, player->getPos() + vec3(0, 10, 0), player->getPos() - vec3(0, 1, 0), vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
+		lightV = setLightView(depthProg, player->getPos() + vec3(0, 2, 0), player->getPos(), vec3(0, 1, 0)); //TODO we could even maybe point this at the nearest cow for funsies
 		drawScene(depthProg, 0);
 		depthProg->unbind();
 
@@ -699,7 +698,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		glUniform1i(shadowProg->getUniform("shadowDepth"), 1);
 		//pass in light info
-		glUniform3f(shadowProg->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
+		glUniform3f(shadowProg->getUniform("lightPos"), player->getPos().x, player->getPos().y + 2, player->getPos().z);
 		glUniform3f(shadowProg->getUniform("lightClr"), 0.3f, 0.3f, 0.3f);
 		//render scene
 		setProjectionMatrix(shadowProg);
@@ -734,7 +733,7 @@ int main(int argc, char **argv) {
 
 	// Establish window
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(512, 512);
+	windowManager->init(1000, 1000);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 
@@ -766,8 +765,6 @@ int main(int argc, char **argv) {
 		auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start);
 		timeScale = elapsed.count() / (10e+9);
 		timeScale *= 500; //TODO this is adjusting to fish's crap speed, but we can just adjust other variables instead
-
-		//cout << timeScale << endl; //DEBUG
 	}
 
 	// Quit program.

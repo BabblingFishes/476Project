@@ -23,6 +23,7 @@ protected:
   Texture *texture;
   Material *material;
   float radius;
+  float height;
   float mass;
   vec3 position;
   vec3 rotation;
@@ -33,15 +34,19 @@ protected:
 public:
   GameObject();
 
-  GameObject(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
+  GameObject(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale);
+
+  GameObject(Shape *shape, Texture *texture, Material *material, float radius, float height, vec3 position, vec3 rotation, vec3 scale, vec3 velocity, float mass);
 
   Texture *getTexture();
   float getRadius();
+  float getHeight();
   float getMass();
   vec3 getPos();
   vec3 getRot();
   vec3 getScale();
   vec3 getVel();
+  vec3 getMidPt();
 
 
   void setPos(vec3 position);
