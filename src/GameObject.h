@@ -55,8 +55,9 @@ public:
   void addForce(vec3 force);
 
   virtual bool update(float timeScale);
-  bool borderCollision(vec3 nextPos);
+  bool borderCollision(vec3 nextPos, int Mwidth, int Mheight);
   virtual void move(float timeScale);
+
   virtual void collide(GameObject *other);
 
   virtual void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);

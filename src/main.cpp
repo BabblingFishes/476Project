@@ -11,14 +11,15 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <glad/glad.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <chrono>
 #include <ctime>
 #include <ratio>
-#include <irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
 #include "stb_image.h"
+
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -33,8 +34,16 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GamePlayer.h"
 #include "GOCow.h"
 #include "GOMothership.h"
+#include "GOBarn.h"
+#include "GOBorder.h"
+#include "GOTree.h"
+#include "GOHaybale.h"
 #include "VFC.h"
-#include "QuadTree.h"
+
+//gui
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_impl_glfw.h>
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -43,18 +52,16 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <glm/gtx/string_cast.hpp>
 
 #define DEBUG_MODE true
-#define NUMOBJS 11
-#define WORLD_SIZE 100
-#define MAP_WIDTH 120
-#define MAP_LENGTH 162
 
 using namespace std;
 using namespace glm;
 using namespace std::chrono;
-using namespace irrklang;
 
 class Application : public EventCallbacks {
 public:
+	//ui stuff
+	bool show_UI = true;
+	float timer = 0;
 
 	WindowManager * windowManager = nullptr;
 
@@ -71,25 +78,29 @@ public:
 	const GLuint SHADOWMAP_WIDTH = 1024, SHADOWMAP_HEIGHT = 1024;
 	GLuint depthMap;
 
-
 	//VFCing
 	bool CULL = true;
 	bool CULL_DEBUG = false;
 
-	//map data
-	int* map;
+	//cow and haybale counter for the mothership
+	int numCows = 0;
+	int numHay = 0;
 
-	shared_ptr<QuadTree> quadTree;
+	//map width and height
+	int Mwidth, Mheight;
+
+	//default positions
+	vec3 playerPos;// = vec3(40.0, 0.0, -60.0);
+	vec3 MSPos;// = vec3(-20.0, 0.0, 20.0);
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
 	Shape *playerShape;
+	Shape* hayShape;
 	Shape *cube;
 	Shape *sphere;
-    Shape *tree;
-
-	//assimp models
-	//Model pinetree;
+    Shape *treeShape;
+	Shape* barnShape;
 
 	Texture *defaultTex;
 
@@ -120,8 +131,12 @@ public:
 	GamePlayer *player = nullptr;
 	Ground *ground;
 	GOMothership *mothership;
-	vector<GameObject> mapObjs;
-	vector<GOCow> gameObjs;
+	GOBarn *barn;
+    
+	vector<GOTree> treeObjs;
+	vector<GOBorder> btreeObjs;
+	vector<GOCow> cowObjs;
+	vector<GOHaybale> hayObjs;
 
 
 
@@ -229,59 +244,104 @@ public:
 		//init GL programs
 		initShadowMapping(resourceDirectory);
 		initSkyBox(resourceDirectory);
-		initMap();
 	}
 
 	//init map from editor
-	void initMap() {
+	void initMap(vector<GOCow> *cows, vector<GOBorder> *btrees, vector<GOTree> *trees, vector<GOHaybale> *hay) {
 		int scanned = 0;
-		int width, height, bpp;
-		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &width, &height, &bpp, 3);
+		int bpp;
+		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &Mwidth, &Mheight, &bpp, 3);
 
-		cout << endl << "Map width: " << width << endl;
-		cout << "Map height: " << height << endl;
-		cout << "Area: " << height * width << endl;
+		cout << endl << "Map width: " << Mwidth << endl;
+		cout << "Map height: " << Mheight << endl;
+		cout << "Area: " << Mheight * Mwidth << endl;
 		cout << "Bytes per pixel: " << bpp << endl;
 
-		int arrlen = width * height * bpp;
-		map = (int*)malloc(arrlen * sizeof(int));
-		cout << "arr size: " << arrlen << endl;
+		//trees = (int*)malloc(Mwidth * Mheight * 2 * sizeof(int));
 
 		int x = 0;
-		int y = 0;
+		int z = 0;
 		int counter = 0;
-		for (int i = 0; i < arrlen; i += bpp) {
+		for (int i = 0; i < Mwidth * Mheight * bpp; i += bpp) {
 			int r = int(rgb[i]);
 			int g = int(rgb[i + 1]);
 			int b = int(rgb[i + 2]);
-			if (counter > width - 1) {
+			int a = int(rgb[i + 3]);
+			if (counter > Mwidth - 1) {
 				counter = 0;
-				y = 0;
-				x++;
+				x = 0;
+				z++;
 			}
-			int xInd = height * 5 * x + 5 * y + 0;
-			int yInd = height * 5 * x + 5 * y + 1;
-			int rInd = height * 5 * x + 5 * y + 2;
-			int gInd = height * 5 * x + 5 * y + 3;
-			int bInd = height * 5 * x + 5 * y + 4;
 
-			map[xInd] = x;
-			map[yInd] = y;
-			map[rInd] = r;
-			map[gInd] = g;
-			map[bInd] = b;
-			//arr[x][y][0] = r;
-			//arr[x][y][1] = g;
-			//arr[x][y][2] = b;
-			//cout << endl << "x: " << x << "\ty: " << y << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
-			y++;
+			//cout << r << " " << g << " " << b << " x:" << x << " z:" << z << endl;
+
+			char* current = RGBtoOBJ(r, g, b);
+			//cout << current << " x:" << x << " z:" << z << endl;
+
+			//random offsets
+			float min = -0.75, max = 0.75;
+			int range = max - min + 1;
+			float xRand = rand() % range + min;
+			float zRand = rand() % range + min;
+
+			if (strcmp(current, "bordertree") == 0) {
+				btrees->push_back(GOBorder(treeShape, defaultTex, 1, vec3(-x + xRand, 3 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
+			}
+			else if (strcmp(current, "innertree") == 0) {
+				trees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 3, z + zRand), vec3(0, 180 * xRand, 0), vec3(5.f + zRand)));
+			}
+			else if (strcmp(current, "cow") == 0) {
+				numCows++;
+				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand));
+			}
+			else if (strcmp(current, "haybale") == 0) {
+				numHay++;
+				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
+			}
+			else if (strcmp(current, "player") == 0) {
+				player->setPos(vec3(-x, 0, z));
+			}
+			else if (strcmp(current, "mothership") == 0) {
+				mothership->setPos(vec3(-x, 0, z));
+			}
+			else if (strcmp(current, "barn") == 0) {
+				barn->setPos(vec3(-x, 2, z));
+			}
+
+			/*if (strcmp(current, "empty") != 0) {
+				cout << current << " at x:" << x << " y:" << z << endl;
+			}*/
+
+			//arr[x][z][0] = r;
+			//arr[x][z][1] = g;
+			//arr[x][z][2] = b;
+			//cout << endl << "x: " << x << "\ty: " << z << "\tr: " << r << "\tg:" << g << "\tb: " << b << endl;
+			x++;
 			counter++;
 			scanned++;
 		}
-
-		quadTree = make_shared<QuadTree>(vec2(-WORLD_SIZE, -WORLD_SIZE), vec2(WORLD_SIZE, WORLD_SIZE));
 	}
+    
+    //Gives the obj based on the RGB value
+    char* RGBtoOBJ(int R, int G, int B) {
+        //border trees
+        if (R == 0 && G == 150 && B == 0) { return "bordertree"; }
+		//inner trees
+		else if (R == 0 && G == 255 && B == 0) { return "innertree"; }
+        //cow
+        else if (R == 0 && G == 0 && B == 0) { return "cow"; }
+		//hay bales
+		else if (R == 255 && G == 150 && B == 0) { return "haybale"; }
+		//barn
+		else if (R == 150 && G == 50 && B == 0) { return "barn"; }
+        //player start position
+        else if (R == 0 && G == 0 && B == 255) { return "player"; }
+        //mothership
+        else if (R == 255 && G == 0 && B == 0) { return "mothership"; }
 
+		else { return "empty"; }
+    }
+    
 	// initializes skybox program
 	void initSkyBox(const std::string& resourceDirectory) {
 		//init the skybox program
@@ -428,138 +488,54 @@ public:
 
 		// Initialize the obj mesh VBOs etc
 		cowShape = new Shape();
-		cowShape->loadMesh(resourceDirectory + "/bunny.obj");
+		cowShape->loadMesh(resourceDirectory + "/Models/cow.obj");
 		cowShape->resize();
 		cowShape->init();
 
-    // Initialize the obj mesh VBOs etc
-	tree = new Shape();
-    tree->loadMesh(resourceDirectory + "/tree.obj");
-    tree->resize();
-    tree->init();
+		hayShape = new Shape();
+		hayShape->loadMesh(resourceDirectory + "/Models/roundedCube.obj");
+		hayShape->resize();
+		hayShape->init();
+
+		// Initialize the obj mesh VBOs etc
+		treeShape = new Shape();
+		treeShape->loadMesh(resourceDirectory + "/Models/pinetree.obj");
+		treeShape->resize();
+		treeShape->init();
+
+		barnShape = new Shape();
+		barnShape->loadMesh(resourceDirectory + "/Models/Barn.obj");
+		barnShape->resize();
+		barnShape->init();
 
 		cube = new Shape();
-		cube->loadMesh(resourceDirectory + "/cube.obj");
+		cube->loadMesh(resourceDirectory + "/Models/cube.obj");
 		cube->resize();
 		cube->init();
 
 		sphere = new Shape();
-    sphere->loadMesh(resourceDirectory + "/sphere.obj");
-    sphere->resize();
-    sphere->init();
+		sphere->loadMesh(resourceDirectory + "/Models/sphere.obj");
+		sphere->resize();
+		sphere->init();
 
 		skybox = new SkyBox();
-		skybox->loadMesh(resourceDirectory + "/cube.obj");
+		skybox->loadMesh(resourceDirectory + "/Models/cube.obj");
 		skybox->resize();
 		skybox->init();
 
 		playerShape = new Shape();
-		playerShape->loadMesh(resourceDirectory + "/cylinder_shell.obj");
+		playerShape->loadMesh(resourceDirectory + "/Models/cylinder_shell.obj");
 		playerShape->resize();
 		playerShape->init();
 
 		//TODO replace below defaultTex with textures
-		ground = new Ground(cube, defaultTex, (float) WORLD_SIZE, (float) WORLD_SIZE);
-		player = new GamePlayer(playerShape, defaultTex, vec3(40.0, 0.0, -60.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(sphere, defaultTex, 13, vec3(-20, 0, 20), vec3(0, 0, 0), vec3(15, 1, 15), NUMOBJS);
-		gameObjs = generateCows(cowShape, defaultTex);
-    mapObjs = generateMap(tree, defaultTex);
+		player = new GamePlayer(playerShape, defaultTex, playerPos, vec3(0.0, -2.0, 0.0), vec3(0.0, 0.0, 0.0));
+		mothership = new GOMothership(sphere, defaultTex, 13, MSPos, vec3(0, 0, 0), vec3(15, 1, 15), numCows, numHay);
+		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5, 5, 5));
+		initMap(&cowObjs, &btreeObjs, &treeObjs, &hayObjs);
+		ground = new Ground(cube, defaultTex, (float)Mwidth, (float)Mheight);
 		initQuad(); //quad for VBO
-
-		quadTree->addObject(player);
-		quadTree->addObject(mothership);
-		for(vector<GOCow>::iterator cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
-			quadTree->addObject(&*cur);
-	  }
-		for(vector<GameObject>::iterator cur = mapObjs.begin(); cur != mapObjs.end(); cur++) {
-			quadTree->addObject(&*cur);
-	  }
 	}
-
-	// makes cows and places them randomly in the world
-	vector<GOCow> generateCows(Shape *shape, Texture *texture) {
-		vector<GOCow> cows;
-		for (int i = 0; i < NUMOBJS; i++) {
-			cows.push_back(GOCow(shape, texture, WORLD_SIZE - 40));
-		}
-		return cows;
-	}
-
-  vector<GameObject> generateMap(Shape *shape, Texture *texture) {
-    vector<GameObject> mapObjs;
-    int xPos, zPos;
-
-    for (int i = -MAP_LENGTH / 2; i <= MAP_LENGTH / 2; i += 4) {
-      if (i < -MAP_WIDTH / 2 || i > MAP_WIDTH / 2) {
-        zPos = i;
-        xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj1);
-        xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj2);
-      }
-      else {
-        zPos = i;
-        xPos = -MAP_WIDTH / 2;
-        GameObject obj1 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj1);
-        xPos = MAP_WIDTH / 2;
-        GameObject obj2 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj2);
-
-        xPos = i;
-        zPos = -MAP_LENGTH / 2;
-        GameObject obj3 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj3);
-
-        zPos = MAP_LENGTH / 2;
-        GameObject obj4 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-        mapObjs.push_back(obj4);
-      }
-    }
-		//Tree lines within border. Each for loop is a line
-        // -MAP_WIDTH < x < -40, -20 < x < MAP_WIDTH, -28 < z < -32
-        for (int i = ((-MAP_WIDTH / 2) + 5); i < MAP_WIDTH / 2; i += 3) {
-          if (i > -20 || i < -40) {
-            xPos = i;
-            if (i % 2 == 0) {
-                zPos = -30 + 2;
-            }
-            else {
-                zPos = -30 - 2;
-            }
-            GameObject obj5 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-            mapObjs.push_back(obj5);
-          }
-        }
-        // -MAP_WIDTH < x < 0, -2 < z < 2
-        for (int i = ((-MAP_WIDTH / 2) + 5); i <= 0; i += 3) {
-          xPos = i;
-          if (i % 2 == 0) {
-              zPos = 0 + 2;
-          }
-          else {
-              zPos = 0 - 2;
-          }
-          GameObject obj6 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-          mapObjs.push_back(obj6);
-        }
-        // -2 < x < 2, -5 < z < MAP_LENGTH - 25
-        for (int i = ((MAP_LENGTH / 2) - 25); i >= 0; i -= 3) {
-          zPos = i;
-          if (i % 2 == 0) {
-              xPos = 0 + 2;
-          }
-          else {
-              xPos = 0 - 2;
-          }
-          GameObject obj7 = GameObject(shape, texture, 1, vec3(xPos, 4.f, zPos), vec3(0), vec3(5.f), vec3(0));
-          mapObjs.push_back(obj7);
-      }
-
-    return mapObjs;
-  }
 
 
 	// geometry set up for a quad
@@ -615,13 +591,10 @@ public:
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
 	void update(double timeScale) {
-		player->doControls(wasdIsDown, arrowIsDown);
+		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight);
 
-		quadTree->update(timeScale);
-
-		//TODO this is dupe'd
 		vector<GOCow>::iterator cur;
-		for (cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
+		for (cur = cowObjs.begin(); cur != cowObjs.end(); cur++) {
 			//TODO mothership collision
 			if (!cur->isCollected()) {
 				if (cur->isColliding(mothership)) {
@@ -631,6 +604,21 @@ public:
 					cur->collide(player);
 					player->collide(&*cur);
 				}
+				cur->update(timeScale, Mwidth, Mheight);
+			}
+		}
+
+		vector<GOHaybale>::iterator curHay;
+		for (curHay = hayObjs.begin(); curHay != hayObjs.end(); curHay++) {
+			if (!curHay->isCollected()) {
+				if (curHay->isColliding(mothership)) {
+					mothership->collect(&*curHay);
+				}
+				if (curHay->isColliding(player)) {
+					curHay->collide(player);
+					player->collide(&*curHay);
+				}
+				curHay->update(timeScale, Mwidth, Mheight);
 			}
 		}
 	}
@@ -682,30 +670,52 @@ public:
 	void drawScene(shared_ptr<Program> curProg, GLint shadowTexture) {
 		shared_ptr<MatrixStack> Model = make_shared<MatrixStack>(); //TODO the sharedptr is probably unnecessary
 
-		vector<GameObject>::iterator objI;
+		vector<GOBorder>::iterator btreeI;
+		vector<GOTree>::iterator treeI;
 		vector<GOCow>::iterator cowI;
+		vector<GOHaybale>::iterator hayI;
 
 		if (shadowTexture) {
 			//mothership
-			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
+			//if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
 				mothership->getTexture()->bind(shadowTexture);
 				mothership->draw(curProg, Model);
+			//}
+			//barn
+			if (!ViewFrustCull(barn->getPos(), barn->getRadius(), CULL)) {
+				barn->getTexture()->bind(shadowTexture);
+				barn->draw(curProg, Model);
 			}
 			//ground
 			ground->getTexture()->bind(shadowTexture);
 			ground->draw(curProg, Model);
-			//trees and such
-			for(objI = mapObjs.begin(); objI != mapObjs.end(); objI++) {
-				if(!ViewFrustCull(objI->getPos(), objI->getRadius(), CULL)) {
-					objI->getTexture()->bind(shadowTexture);
-			  	objI->draw(curProg, Model);
+
+			//border trees
+			for(btreeI = btreeObjs.begin(); btreeI != btreeObjs.end(); btreeI++) {
+				if(!ViewFrustCull(btreeI->getPos(), btreeI->getRadius(), CULL)) {
+					btreeI->getTexture()->bind(shadowTexture);
+			  	btreeI->draw(curProg, Model);
+				}
+			}
+			//inner trees
+			for (treeI = treeObjs.begin(); treeI != treeObjs.end(); treeI++) {
+				if (!ViewFrustCull(treeI->getPos(), treeI->getRadius(), CULL)) {
+					treeI->getTexture()->bind(shadowTexture);
+					treeI->draw(curProg, Model);
 				}
 			}
 			//cows
-			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
+			for(cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
 				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
 					cowI->getTexture()->bind(shadowTexture);
 			  	cowI->draw(curProg, Model);
+				}
+			}
+			//hay
+			for (hayI = hayObjs.begin(); hayI != hayObjs.end(); hayI++) {
+				if (!ViewFrustCull(hayI->getPos(), hayI->getRadius(), CULL)) {
+					hayI->getTexture()->bind(shadowTexture);
+					hayI->draw(curProg, Model);
 				}
 			}
 			//player
@@ -717,18 +727,35 @@ public:
 			if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
 				mothership->draw(curProg, Model);
 			}
+			//barn
+			if (!ViewFrustCull(barn->getPos(), barn->getRadius(), CULL)) {
+				barn->draw(curProg, Model);
+			}
 			//ground
 			ground->draw(curProg, Model);
-			//trees and such
-			for(objI = mapObjs.begin(); objI != mapObjs.end(); objI++) {
-				if(!ViewFrustCull(objI->getPos(), objI->getRadius(), CULL)) {
-			  	objI->draw(curProg, Model);
+
+			//bordertrees
+			for(btreeI = btreeObjs.begin(); btreeI != btreeObjs.end(); btreeI++) {
+				if(!ViewFrustCull(btreeI->getPos(), btreeI->getRadius(), CULL)) {
+					btreeI->draw(curProg, Model);
+				}
+			}
+			//inner trees
+			for (treeI = treeObjs.begin(); treeI != treeObjs.end(); treeI++) {
+				if (!ViewFrustCull(treeI->getPos(), treeI->getRadius(), CULL)) {
+					treeI->draw(curProg, Model);
 				}
 			}
 			//cows
-			for(cowI = gameObjs.begin(); cowI != gameObjs.end(); cowI++) {
+			for(cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
 				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
 			  	cowI->draw(curProg, Model);
+				}
+			}
+			//hay
+			for (hayI = hayObjs.begin(); hayI != hayObjs.end(); hayI++) {
+				if (!ViewFrustCull(hayI->getPos(), hayI->getRadius(), CULL)) {
+					hayI->draw(curProg, Model);
 				}
 			}
 			//player
@@ -805,10 +832,45 @@ public:
 		shadowProg->unbind();
 	}
 
+	void renderGUI() {
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
+
+		if (show_UI)
+		{
+			ImGui::Begin("Holy Cow", NULL, window_flags);
+
+			int collCows = mothership->getCollectedCows();
+			int collHay = mothership->getCollectedHay();
+			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
+
+			ImGui::Text("Hay Collected: %d", collHay);
+
+			int cowpoints = collCows * 10;
+			int haypoints = collHay * 7;
+			int totalpoints = cowpoints - haypoints;
+			ImGui::Text("Points earned: %d", totalpoints);
+			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
+		}
+
+		ImGui::Render();
+		int display_w = 200, display_h = 300;
+		glfwGetFramebufferSize(windowManager->getHandle(), &display_w, &display_h);
+		glViewport(0, 0, display_w, display_h);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+
 	void render() {
 		if (shadowsEnabled) renderShadowDepth();
 		renderSkyBox();
 		renderScene();
+
+		
+		renderGUI();
 	}
 };
 
@@ -827,7 +889,7 @@ int main(int argc, char **argv) {
 
 	// Establish window
 	WindowManager *windowManager = new WindowManager();
-	windowManager->init(1024, 1024);
+	windowManager->init(1050, 1050);
 	windowManager->setEventCallbacks(application);
 	application->windowManager = windowManager;
 
@@ -835,22 +897,17 @@ int main(int argc, char **argv) {
 	application->initTex(resourceDir);
 	application->initGeom(resourceDir);
 
-	//play background sfx
-	ISoundEngine* engine = createIrrKlangDevice();
-	if (!engine)
-		return 0;
-	engine->play2D("../resources/Audio/Night.mp3", true);
+	//gui stuff
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	
+	ImGui_ImplGlfw_InitForOpenGL(windowManager->getHandle(), true);
+	ImGui_ImplOpenGL3_Init("#version 330");
+	ImGui::StyleColorsDark();
 
 	float timeScale = 0;
-
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
-
-		/*high_resolution_clock::time_point t1;
-		high_resolution_clock::time_point t2;
-		t1 = high_resolution_clock::now();
-		printf(t1);*/
-
 		auto start = std::chrono::steady_clock::now();
 
 		// update game state
@@ -869,6 +926,9 @@ int main(int argc, char **argv) {
 
 		//cout << timeScale << endl; //DEBUG
 	}
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
 
 	// Quit program.
 	windowManager->shutdown();
