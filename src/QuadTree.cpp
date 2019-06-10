@@ -178,12 +178,7 @@ void QuadTree::prune() {
       }
       else {
         children[q] = nullptr;
-        if((activeNodes & (unsigned char)(1 << q)) == 0) { //TODO DEBUG redundant safeguard
-          activeNodes ^= (unsigned char)(1 << q);
-        }
-        else {
-          cout << "Bitflag " << activeNodes << " incorrect for child " << q << endl;
-        }
+        activeNodes &= ~(unsigned char)(1 << q);
       }
     }
   }
@@ -257,9 +252,7 @@ void QuadTree::update(double timeScale) {
 }
 
 
-//TODO this has not been fixed yet
-//inserts the given object into the tree
-// this does not trace upwards! given object must fit within bounds
+// inserts the given object into the tree
 bool QuadTree::insert(GameObject *obj) {
   vec2 dimensions = regionMax - regionMin;
   //object doesn't fit here, needs to be moved to parent
@@ -274,7 +267,7 @@ bool QuadTree::insert(GameObject *obj) {
   }
 
   //if this is a leaf, just insert
-  if((myObjs.size() == 0 && activeNodes == 0) ||
+  if((myObjs.size() == 0 && !hasChildren()) ||
      (dimensions.x <= MIN_SIZE && dimensions.y <= MIN_SIZE)) {
     myObjs.push_back(obj);
     return true;
@@ -357,6 +350,11 @@ bool QuadTree::isWithin(GameObject *obj, vec2 tMin, vec2 tMax) {
 }
 
 bool QuadTree::hasChildren() {
+  //DEBUG
+  bool temp = children[0] != nullptr || children[1] != nullptr || children[2] != nullptr || children[3] != nullptr;
+  if(temp != (activeNodes != 0)) {
+    cout << "bitflag problem" << endl;
+  }
   return activeNodes != 0;
 }
 
