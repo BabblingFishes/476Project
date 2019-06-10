@@ -2,6 +2,7 @@
 
 #define MAP_WIDTH 120
 #define MAP_LENGTH 162
+#define EPSILON 0.0001
 
 using namespace std;
 using namespace glm;
@@ -51,8 +52,10 @@ void GameObject::addForce(vec3 force) {
 }
 
 // called once per frame
-void GameObject::update(float timeScale) {
+bool GameObject::update(float timeScale) {
+  vec3 oldPos = position;
   move(timeScale);
+  return position != oldPos;
 }
 
 //Checks if player's next movement is into a tree border, returns true if collision
@@ -125,7 +128,7 @@ void GameObject::move(float timeScale) {
 
   velocity *= 1 - (0.02f * timeScale); // ""friction"" TODO
     velocity += netForce * timeScale / mass;
-    
+
     if (borderCollision(position + velocity)){
         //cout << "X = " << position.x << ", Y = " << position.y << ", Z = " <<position.z << endl;
         //cout << velocity.x << velocity.y << velocity.z << endl;

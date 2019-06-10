@@ -34,7 +34,7 @@ public:
 
   bool isCollected();
 
-  void update(float timeScale);
+  bool update(float timeScale);
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
   void collect();

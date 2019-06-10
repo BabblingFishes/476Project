@@ -30,6 +30,9 @@ private:
   float camZoom;
   vec3 camPosition;
 
+  bool *wasdIsDown;
+  bool *arrowIsDown;
+
   void positionCamera();
 
 public:
@@ -42,8 +45,9 @@ public:
   float getCamTheta();
 
   bool borderCollision(vec3 nextPos);
-    
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale);
+
+  void doControls(bool *wasdIsDown, bool *arrowIsDown);
+  bool update(float timeScale);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 

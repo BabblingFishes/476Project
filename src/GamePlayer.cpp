@@ -62,10 +62,15 @@ void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   Model->popMatrix();
 }
 
+void GamePlayer::doControls(bool *wasdIsDown, bool *arrowIsDown) {
+  this->wasdIsDown = wasdIsDown;
+  this->arrowIsDown = arrowIsDown;
+}
+
 /* moves the player and camera */
 //TODO this needs to be done real-time
 //TODO the View logic can probably be abstracted out
-void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
+bool GamePlayer::update(float timeScale) {
   //TODO after implementing real-time, make these values constants
   float moveMagn = 0.01f; //force from player controls
   //float mass = 1; // player mass
@@ -110,6 +115,7 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale) {
 
   // place the camera,pointed at the player
   positionCamera();
+  return true;
 }
 
 void GamePlayer::collide(GOCow *cow) {

@@ -34,6 +34,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOCow.h"
 #include "GOMothership.h"
 #include "VFC.h"
+#include "QuadTree.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -77,6 +78,8 @@ public:
 
 	//map data
 	int* map;
+
+	shared_ptr<QuadTree> quadTree;
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
@@ -275,6 +278,8 @@ public:
 			counter++;
 			scanned++;
 		}
+
+		quadTree = make_shared<QuadTree>(vec2(-WORLD_SIZE, -WORLD_SIZE), vec2(WORLD_SIZE, WORLD_SIZE));
 	}
 
 	// initializes skybox program
@@ -460,6 +465,15 @@ public:
 		gameObjs = generateCows(cowShape, defaultTex);
     mapObjs = generateMap(tree, defaultTex);
 		initQuad(); //quad for VBO
+
+		quadTree->addObject(player);
+		quadTree->addObject(mothership);
+		for(vector<GOCow>::iterator cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
+			quadTree->addObject(&*cur);
+	  }
+		for(vector<GameObject>::iterator cur = mapObjs.begin(); cur != mapObjs.end(); cur++) {
+			quadTree->addObject(&*cur);
+	  }
 	}
 
 	// makes cows and places them randomly in the world
@@ -601,8 +615,11 @@ public:
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
 	void update(double timeScale) {
-		player->update(wasdIsDown, arrowIsDown, timeScale);
+		player->doControls(wasdIsDown, arrowIsDown);
 
+		quadTree->update(timeScale);
+
+		//TODO this is dupe'd
 		vector<GOCow>::iterator cur;
 		for (cur = gameObjs.begin(); cur != gameObjs.end(); cur++) {
 			//TODO mothership collision
@@ -614,7 +631,6 @@ public:
 					cur->collide(player);
 					player->collide(&*cur);
 				}
-				cur->update(timeScale);
 			}
 		}
 	}
@@ -826,6 +842,7 @@ int main(int argc, char **argv) {
 	engine->play2D("../resources/Audio/Night.mp3", true);
 
 	float timeScale = 0;
+
 	// Loop until the user closes the window.
 	while (!glfwWindowShouldClose(windowManager->getHandle())) {
 
