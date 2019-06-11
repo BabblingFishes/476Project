@@ -16,7 +16,7 @@ out vec3 fragNor;
 out vec3 halfVec;
 out vec3 lightDir;
 
-out vec3 fPos;
+out vec4 fPos;
 out vec2 vTexCoord;
 out vec4 fPosLS;
 
@@ -34,9 +34,9 @@ void main() {
   //halfVec = normalize(normalize(eye) + normalize(lightDir));
   halfVec = eye + lightDir;
 
-  fPos = (M * vec4(vertPos, 1.0)).xyz; //worldspace pos
+  fPos = (M * vec4(vertPos, 1.0)); //worldspace pos
   vTexCoord = vertTex; //texture coords
-  fPosLS = LS * vec4(fPos, 1.0); //light space coords
+  fPosLS = LS * fPos; //light space coords
 
   vColor = vec3(max(dot(fragNor, normalize(lightDir)), 0));
 }
