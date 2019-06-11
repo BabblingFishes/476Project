@@ -14,9 +14,11 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <irrKlang/irrKlang.h>
 
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
@@ -25,6 +27,9 @@ class GOCow : public GameObject {
 private:
   bool collected;
   int walkframe;
+  int framecounter;
+  ISoundEngine* engine;
+  ISoundSource* moo;
 
 public:
   //random constructor

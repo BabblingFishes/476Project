@@ -30,18 +30,21 @@ public:
 
 	void load();
 	void rebirth(float t);
-	void update(float t, float h, const glm::vec3 &g);
+	void update(float t, float h, const glm::vec3 &g, bool sparking);
 	const vec3 &getPosition() const { return x; };
 	const vec3 &getVelocity() const { return v; };
+	const vec3& getRotation() const { return r; };
 	const vec4 &getColor() const { return color; };
+	float getScale() { return scale; };
 
 private:
 
 	float charge = 1.f; // +1 or -1
 	float m = 1.f; // mass
 	float d = 0.f; // viscous damping
+	glm::vec3 r = glm::vec3(0.f); // rotation
 	glm::vec3 x = glm::vec3(0.f); // position
-	glm::vec3 v = glm::vec3(0.f); // velocity
+	glm::vec3 v = glm::vec3(2.f); // velocity
 	float lifespan = 1.f; // how long this particle lives
 	float tEnd = 0.f;     // time this particle dies
 	float scale = 1.f;

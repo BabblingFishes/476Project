@@ -31,28 +31,31 @@ void Particle::rebirth(float t)
 	d = randFloat(0.0f, 0.02f);
 	x.x = 0;
 	x.y = 0;
-	x.z = randFloat(-3.f, -2.f);
-	v.x = randFloat(-0.1f, 0.1f);
-	v.y = randFloat(-0.1f, 0.1f);
-	v.z = randFloat(-0.1f, 0.1f);
-	lifespan = randFloat(100.f, 200.f);
+	x.z = randFloat(-2.f, 1.f);
+	v.x = randFloat(-1.0f, 1.0f);
+	v.y = randFloat(-1.0f, 1.0f);
+	v.z = randFloat(-1.0f, 1.0f);
+	lifespan = randFloat(0.3f, 0.5f);
 	tEnd = t + lifespan;
 
-	scale = randFloat(0.2f, 1.0f);
-	color.r = randFloat(0.0f, 0.1f);
-	color.g = randFloat(0.0f, 0.1f);
-	color.b = randFloat(0.25f, 0.5f);
+	scale = randFloat(9.0f, 10.0f);
+	color.r = randFloat(0.75f, 1.0f);
+	color.g = randFloat(0.75f, 1.0f);
+	color.b = randFloat(0.0f, 0.2f);
 	color.a = 1.0f;
 }
 
-void Particle::update(float t, float h, const vec3 &g)
+void Particle::update(float t, float h, const vec3& g, bool sparking)
 {
-	if (t > tEnd)
-	{
-		rebirth(t);
+	if (sparking) {
+		if (t > tEnd)
+		{
+			rebirth(t);
+		}
 	}
 
 	// very simple update
-	x += h * v;
+	x += h * v + (g * 0.1f);
+	scale = 10.f;
 	color.a = (tEnd - t) / lifespan;
 }

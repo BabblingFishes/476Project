@@ -88,15 +88,16 @@ public:
 	//particle stuff
 	shared_ptr<Program> partprog;
 	vector<shared_ptr<Particle>> particles;
-	int numP = 300;
+	int numP = 100;
 	GLfloat points[900];
 	GLfloat pointColors[1200];
 	GLuint pointsbuffer;
 	GLuint colorbuffer;
 	shared_ptr<Texture> ptexture;
-	float t = 0.0f; //reset in init
-	float h = 0.01f;
+	float t = 0.5f; //reset in init
+	float h = 0.005f;
 	vec3 g = vec3(0.0f, -0.01f, 0.0f);
+	bool sparking = false;
 
 	//cow and haybale counter for the mothership
 	int numCows = 0;
@@ -467,7 +468,6 @@ public:
   	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-
 	// loads & initializes skybox textures
 	void initTex(const std::string& resourceDirectory) {
 		vector<std::string> faces {
@@ -506,11 +506,10 @@ public:
 		partprog->addAttribute("vertPos");
 	}
 
-
 	void initParticles(const std::string& resourceDirectory)
 	{
 		ptexture = make_shared<Texture>();
-		ptexture->setFilename(resourceDirectory + "/alpha.bmp");
+		ptexture->setFilename(resourceDirectory + "/sparkalpha.bmp");
 		ptexture->init();
 		ptexture->setUnit(0);
 		ptexture->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
@@ -681,13 +680,12 @@ public:
 
 		//TODO replace below defaultTex with textures
 		player = new GamePlayer(playerShape, defaultTex, playerPos, vec3(0.0, -2.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(msShape, defaultTex, 13, MSPos, vec3(0, 0, 0), vec3(10, 10, 10), numCows, numHay);
+		mothership = new GOMothership(msShape, defaultTex, 10, MSPos, vec3(0, 0, 0), vec3(10, 10, 10), numCows, numHay);
 		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5, 5, 5));
 		initMap(&cowObjs, &btreeObjs, &treeObjs, &hayObjs);
 		ground = new Ground(cube, defaultTex, (float)Mwidth, (float)Mheight);
 		initQuad(); //quad for VBO
 	}
-
 
 
 	// geometry set up for a quad
@@ -743,7 +741,7 @@ public:
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
 	void update(double timeScale) {
-		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight);
+		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight, sparking);
 
 		vector<GOCow>::iterator cur;
 		for (cur = cowObjs.begin(); cur != cowObjs.end(); cur++) {
@@ -780,7 +778,7 @@ public:
 		// update the particles
 		for (auto particle : particles)
 		{
-			particle->update(t, h, g);
+			particle->update(t, h, g, sparking);
 		}
 		t += h;
 
@@ -1073,7 +1071,6 @@ public:
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
 		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
 		window_flags |= ImGuiWindowFlags_NoBackground;
 
@@ -1091,7 +1088,7 @@ public:
 			int cowpoints = collCows * 10;
 			int haypoints = collHay * 7;
 			int totalpoints = cowpoints - haypoints;
-			ImGui::TextColored(ImVec4(0.0, 0.5, 0.1, 1.0), "Points earned: %d", totalpoints);
+			ImGui::TextColored(ImVec4(1.0, 0.5, 0.5, 1.0), "Points earned: %d", totalpoints);
 			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
@@ -1107,8 +1104,8 @@ public:
 		if (shadowsEnabled) renderShadowDepth();
 		renderSkyBox();
 		renderScene();
-		renderParticles();
 		renderGUI();
+		renderParticles();
 	}
 };
 

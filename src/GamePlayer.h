@@ -14,11 +14,13 @@
 #include "GOCow.h"
 #include "GOHaybale.h"
 
+#include <irrKlang/irrklang.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
@@ -29,6 +31,8 @@ private:
   float camPhi;
   float camTheta;
   float camZoom;
+  ISoundEngine* engine;
+  ISoundSource* boing;
   vec3 camPosition;
 
   void positionCamera();
@@ -44,7 +48,8 @@ public:
 
   bool borderCollision(vec3 nextPos);
     
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight);
+  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight, bool &sparking);
+  void movePlayer(float timeScale, int Mwidth, int Mheight, bool& sparking);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 

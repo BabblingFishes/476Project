@@ -31,6 +31,11 @@ GOCow::GOCow(Shape *shape, Texture *texture, float x, float z) {
   velocity = vec3(0.0);
   collected = false;
   walkframe = 0;
+  framecounter = 0;
+  engine = createIrrKlangDevice();
+  if (!engine)
+	  return;
+  moo = engine->addSoundSourceFromFile("../resources/Audio/Moo.ogg");
 }
 
 // specific constructor
@@ -56,7 +61,10 @@ void GOCow::update(float timeScale, int Mwidth, int Mheight, Shape** cowWalk) {
     //move in the direction of the rotation
 	  int frame = walkframe % 10;
 	  shape = cowWalk[frame];
-	  walkframe++;
+	  framecounter++;
+	  if (framecounter % 3 == 0) {
+		  walkframe++;
+	  }
     netForce += vec3(sin(rotation.y), 0, cos(rotation.y)) * vec3(moveMagn);
   }
   move(timeScale, Mwidth, Mheight);
@@ -78,17 +86,16 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     }
     else {
       material->draw(prog);
+	  glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+	  shape->draw(prog);
     }
-    glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-    shape->draw(prog);
   Model->popMatrix();
 }
 
 
 void GOCow::collect() {
-	ISoundEngine* engine = createIrrKlangDevice();
-	if (!engine)
-		return;
-	engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
+	if (!engine->isCurrentlyPlaying(moo)) {
+		engine->play2D(moo);
+	}
   collected = true;
 }

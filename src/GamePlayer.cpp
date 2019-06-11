@@ -1,10 +1,14 @@
 #include "GamePlayer.h"
+#include "Particle.h"
 
 #define MAP_WIDTH 120
 #define MAP_LENGTH 162
 
+#include <irrKlang/irrKlang.h>
+
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale) {
   this->shape = shape;
@@ -30,6 +34,10 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   camTheta = rotation.y;
   camZoom = 10;
   positionCamera();
+  engine = createIrrKlangDevice();
+  if (!engine)
+	  return;
+  boing = engine->addSoundSourceFromFile("../resources/Audio/Boing.mp3");
 }
 
 
@@ -65,7 +73,7 @@ void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
 /* moves the player and camera */
 //TODO this needs to be done real-time
 //TODO the View logic can probably be abstracted out
-void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight) {
+void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight, bool & sparking) {
   //TODO after implementing real-time, make these values constants
   float moveMagn = 0.01f; //force from player controls
   //float mass = 1; // player mass
@@ -106,10 +114,40 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, in
             netForce += xForce;
     }
 
-  move(timeScale, Mwidth, Mheight);
+  movePlayer(timeScale, Mwidth, Mheight, sparking);
 
   // place the camera,pointed at the player
   positionCamera();
+}
+
+// uses physics to decide new position
+void GamePlayer::movePlayer(float timeScale, int Mwidth, int Mheight, bool &sparking) {
+	//TODO: add gravity
+	//TODO: spin?
+
+	velocity *= 1 - (0.02f * timeScale); // ""friction"" TODO
+	velocity += netForce * timeScale / mass;
+	//cout << position.x << " " << position.z << endl;
+
+	if (GameObject::borderCollision(position + velocity, Mwidth, Mheight)) {
+		sparking = true;
+		engine->play2D(boing);
+	}
+	if (!engine->isCurrentlyPlaying(boing))
+	{
+		sparking = false;
+	}
+	position += velocity;
+
+	netForce = vec3(0);
+
+	/* if(position.y > 0) { // ""gravity"" TODO
+	  position
+	} */
+
+	if (position.y < 0) {
+		position.y -= position.y;
+	}
 }
 
 void GamePlayer::collide(GOCow *cow) {
