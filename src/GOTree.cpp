@@ -17,9 +17,17 @@ GOTree::GOTree(Shape* shape, Texture* texture, float radius, vec3 position, vec3
 		vec3(0.4, 0.55, 0.45), //matSpec
 		.25); //shine
 
-	this->radius = radius;
+	//this->radius = radius;
 	this->position = position;
 	this->rotation = rotation;
 	this->scale = scale;
-	mass = 0;
+
+	physEnabled = false;
+  mass = 1;
+  bounce = 0.75;
+  netForce = vec3(0.0f);
+
+	computeDimensions();
+
+	idName = GOid::Tree;
 }

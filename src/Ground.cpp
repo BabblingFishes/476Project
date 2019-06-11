@@ -8,12 +8,11 @@ Ground::Ground(Shape *shape, Texture *texture, float width, float length) {
   this->texture = texture;
   this->width = width;
   this->length = length;
-  cout << width << " " << length << endl;
 
   material = new Material(
     vec3(0.015, 0.2, 0.05), //amb
     vec3(0.05, 0.3, 0.1), //dif
-	vec3(0.1, 0.1, 0.1), //matSpec
+	  vec3(0.1, 0.1, 0.1), //spec
     0.01); //shine
 
   /*glUniform3f(curProg->getUniform("matAmb"), 0.1913f, 0.0735f, 0.0225f);
@@ -34,8 +33,9 @@ bool Ground::isColliding(GameObject *gameObj) {
 
 void Ground::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
-    Model->translate(vec3(0, -1.95, 0));
-    Model->scale(vec3(width*1.5, 1, length*1.5)); //TODO
+    //adjust z to accommodate map generator
+    Model->translate(vec3(-width/2.0, 0, length/2.0)); //TODO change these back when done debugging
+    Model->scale(vec3(width/2.0, 1, length/2.0));
     material->draw(prog);
     glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
     shape->draw(prog);
