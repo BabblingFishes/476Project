@@ -50,7 +50,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   engine = createIrrKlangDevice();
   if (!engine)
 	  return;
-  boing = engine->addSoundSourceFromFile("../resources/Audio/Boing.mp3");
+  boing = engine->addSoundSourceFromFile("../resources/Audio/Boing.ogg");
   idName = GOid::Player;
 }
 

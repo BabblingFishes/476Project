@@ -142,13 +142,13 @@ void GameObject::bounceOff(GameObject *other) {
   // no, because the other object is going to call bounceOff(this) -- we need them the same until then
   // could we instead add the velocity that will get them out?
   // jitter may occur
+
+  //if(false) {
   if(other->isPhysEnabled()) {
-    //we'll have to make due
-    //don't forget to factor in mass
-    // the player will have a pretty high mass so as not to be jostled by cows, if we call this at all
     float oBounce = other->getBounce();
     vec3 momentum = velocity * mass;
     vec3 oMomentum = other->getVel() * other->getMass();
+    //TODO
   }
   else {
     //all nonPhysEnabled objs are cylinders; translate to 2D space

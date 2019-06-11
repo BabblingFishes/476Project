@@ -440,12 +440,12 @@ public:
 		depthProg->addUniform("matSpec"); //red'd by objects
 		depthProg->addUniform("shine"); //red'd by objects
 
-        
+
         DepthProgDebug = make_shared<Program>();
         DepthProgDebug->setVerbose(true);
         DepthProgDebug->setShaderNames(resourceDirectory + "/depth_vertDebug.glsl", resourceDirectory + "/depth_fragDebug.glsl");
         DepthProgDebug->init();
-        
+
         DepthProgDebug->addUniform("LP");
         DepthProgDebug->addUniform("LV");
         DepthProgDebug->addUniform("M");
@@ -458,7 +458,7 @@ public:
         DepthProgDebug->addUniform("matSpec"); //red'd by objects
         DepthProgDebug->addUniform("shine"); //red'd by objects
 
-        
+
 		shadowProg = make_shared<Program>();
 		shadowProg->setVerbose(true);
 		shadowProg->setShaderNames(resourceDirectory + "/shadow_vert_BP.glsl", resourceDirectory + "/shadow_frag_BP.glsl");
@@ -484,13 +484,13 @@ public:
 		shadowProg->addAttribute("vertTex");
 		shadowProg->addUniform("Texture0");
 		shadowProg->addUniform("shadowDepth");
-        
-        
+
+
         DebugProg = make_shared<Program>();
         DebugProg->setVerbose(true);
         DebugProg->setShaderNames(resourceDirectory + "/pass_vert.glsl", resourceDirectory + "/pass_texfrag.glsl");
         DebugProg->init();
-        
+
         DebugProg->addUniform("texBuf");
         DebugProg->addAttribute("vertPos");
 
@@ -822,6 +822,37 @@ public:
 
 		quadTree->update(timeScale);
 
+
+
+		for (vector<GOCow>::iterator cur = cowObjs.begin(); cur != cowObjs.end(); cur++) {
+			//TODO mothership collision
+			if (!cur->isCollected()) {
+				if (cur->isColliding(mothership)) {
+					mothership->collide(&*cur);
+					cur->collide(mothership);
+				}
+				else if (cur->isColliding(player)) {
+					cur->collide(player);
+					player->collide(&*cur);
+				}
+				cur->update(timeScale);
+			}
+		}
+
+		for (vector<GOHaybale>::iterator cur = hayObjs.begin(); cur != hayObjs.end(); cur++) {
+			if (!cur->isCollected()) {
+				if (cur->isColliding(mothership)) {
+					mothership->collide(&*cur);
+					cur->collide(mothership);
+				}
+				if (cur->isColliding(player)) {
+					cur->collide(player);
+					player->collide(&*cur);
+				}
+				cur->update(timeScale);
+			}
+		}
+
 		player->positionCamera();
 
 		//TODO mothership->collide(cow/bale) should collect
@@ -1040,8 +1071,8 @@ public:
 		//render scene
 		depthProg->bind();
 		lightP = setOrthoMatrix(depthProg);
-		lightV = setLightView(depthProg, player->getPos() + vec3(0, 27, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x + 10, 1, player->getPos().z - 10)*/, vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
-        
+		lightV = setLightView(depthProg, player->getPos() + vec3(0, 26, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x + 10, 1, player->getPos().z - 10)*/, vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
+
         //cout << "LightPos.X: " << (player->getPos() + vec3(0, 30, 0)).x << ", Lookat.X: " << (player->getPos() + vec3(-0.1, 25, -0.1)).x << endl;
         //cout << "LightPos.Y: " << (player->getPos() + vec3(-2 * player->getPos().x, 10, 0)).y << ", Lookat.Y: " << (player->getPos() - vec3(-2 * player->getPos().x, 1, 0)).y << endl;
         //cout << "LightPos.Z: " << (player->getPos() + vec3(-2 * player->getPos().x, 30, 0)).z << ", Lookat.Z: " << (player->getPos() + vec3(-0.1, 25, -0.1)).z << endl;
@@ -1063,7 +1094,7 @@ public:
             if (GEOM_DEBUG) {
                 DepthProgDebug->bind();
                 SetOrthoMatrix(DepthProgDebug);
-                setLightView(depthProg, player->getPos() + vec3(0, 27, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x - 10, 1, player->getPos().z + 10)*/, vec3(0, 1, 0));
+                setLightView(depthProg, player->getPos() + vec3(0, 26, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x - 10, 1, player->getPos().z + 10)*/, vec3(0, 1, 0));
                 drawScene(DepthProgDebug, shadowProg->getUniform("Texture0"));
                 DepthProgDebug->unbind();
             }
