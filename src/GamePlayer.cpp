@@ -12,7 +12,7 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   this->material = material;
   radius = 10; //this is the beam radius
   mass = 1;
-  this->position = position + vec3(0, 1, 0); //this baby flies
+  this->position = position + vec3(0, 1.5, 0); //this baby flies
   this->rotation = rotation;
   this->velocity = velocity;
   this->scale = scale;

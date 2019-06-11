@@ -8,7 +8,6 @@ Ground::Ground(Shape *shape, Texture *texture, float width, float length) {
   this->texture = texture;
   this->width = width;
   this->length = length;
-  cout << width << " " << length << endl;
 
   material = new Material(
     vec3(0.015, 0.2, 0.05), //amb

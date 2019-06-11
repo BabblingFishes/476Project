@@ -30,6 +30,7 @@ GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   scale = vec3(0.85);
   velocity = vec3(0.0);
   collected = false;
+  walkframe = 0;
 }
 
 // specific constructor
@@ -49,10 +50,13 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
 bool GOCow::isCollected()   {   return collected;   }
 
 
-void GOCow::update(float timeScale, int Mwidth, int Mheight) {
+void GOCow::update(float timeScale, int Mwidth, int Mheight, Shape** cowWalk) {
   float moveMagn = 0.0001f; //walkin' power
   if(position.y == 0) { //if on the ground
     //move in the direction of the rotation
+	  int frame = walkframe % 10;
+	  shape = cowWalk[frame];
+	  walkframe++;
     netForce += vec3(sin(rotation.y), 0, cos(rotation.y)) * vec3(moveMagn);
   }
   move(timeScale, Mwidth, Mheight);

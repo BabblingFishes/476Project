@@ -95,10 +95,24 @@ public:
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
+	Shape* cowWalk1;
+	Shape* cowWalk2;
+	Shape* cowWalk3;
+	Shape* cowWalk4;
+	Shape* cowWalk5;
+	Shape* cowWalk6;
+	Shape* cowWalk7;
+	Shape* cowWalk8;
+	Shape* cowWalk9;
+	Shape* cowWalk10;
+	Shape* cowWalk[10] = { cowWalk1, cowWalk2, cowWalk3, cowWalk4,
+		cowWalk5, cowWalk6, cowWalk7, cowWalk8, cowWalk9, cowWalk10};
+
 	Shape *playerShape;
 	Shape* hayShape;
 	Shape *cube;
-	Shape *sphere;
+	Shape *msShape;
+	Shape* msiShape;
     Shape *treeShape;
 	Shape* barnShape;
 
@@ -257,8 +271,6 @@ public:
 		cout << "Area: " << Mheight * Mwidth << endl;
 		cout << "Bytes per pixel: " << bpp << endl;
 
-		//trees = (int*)malloc(Mwidth * Mheight * 2 * sizeof(int));
-
 		int x = 0;
 		int z = 0;
 		int counter = 0;
@@ -279,7 +291,8 @@ public:
 			//cout << current << " x:" << x << " z:" << z << endl;
 
 			//random offsets
-			float min = -0.75, max = 0.75;
+			float min = -0.75;
+			float max = 0.75;
 			int range = max - min + 1;
 			float xRand = rand() % range + min;
 			float zRand = rand() % range + min;
@@ -299,10 +312,10 @@ public:
 				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
 			}
 			else if (strcmp(current, "player") == 0) {
-				player->setPos(vec3(-x, 0, z));
+				player->setPos(vec3(-x, 1.5, z));
 			}
 			else if (strcmp(current, "mothership") == 0) {
-				mothership->setPos(vec3(-x, 0, z));
+				mothership->setPos(vec3(-x, -0.5, z));
 			}
 			else if (strcmp(current, "barn") == 0) {
 				barn->setPos(vec3(-x, 2, z));
@@ -488,9 +501,69 @@ public:
 
 		// Initialize the obj mesh VBOs etc
 		cowShape = new Shape();
-		cowShape->loadMesh(resourceDirectory + "/Models/cow.obj");
+		cowShape->loadMesh(resourceDirectory + "/Models/Cow.obj");
 		cowShape->resize();
 		cowShape->init();
+
+		cowWalk1 = new Shape();
+		cowWalk1->loadMesh(resourceDirectory + "/Models/CowWalk/step1.obj");
+		cowWalk1->resize();
+		cowWalk1->init();
+		cowWalk[0] = cowWalk1;
+		
+		cowWalk2 = new Shape();
+		cowWalk2->loadMesh(resourceDirectory + "/Models/CowWalk/step2.obj");
+		cowWalk2->resize();
+		cowWalk2->init();
+		cowWalk[1] = cowWalk2;
+
+		cowWalk3 = new Shape();
+		cowWalk3->loadMesh(resourceDirectory + "/Models/CowWalk/step3.obj");
+		cowWalk3->resize();
+		cowWalk3->init();
+		cowWalk[2] = cowWalk3;
+
+		cowWalk4 = new Shape();
+		cowWalk4->loadMesh(resourceDirectory + "/Models/CowWalk/step4.obj");
+		cowWalk4->resize();
+		cowWalk4->init();
+		cowWalk[3] = cowWalk4;
+
+		cowWalk5 = new Shape();
+		cowWalk5->loadMesh(resourceDirectory + "/Models/CowWalk/step5.obj");
+		cowWalk5->resize();
+		cowWalk5->init();
+		cowWalk[4] = cowWalk5;
+
+		cowWalk6 = new Shape();
+		cowWalk6->loadMesh(resourceDirectory + "/Models/CowWalk/step6.obj");
+		cowWalk6->resize();
+		cowWalk6->init();
+		cowWalk[5] = cowWalk6;
+
+		cowWalk7 = new Shape();
+		cowWalk7->loadMesh(resourceDirectory + "/Models/CowWalk/step7.obj");
+		cowWalk7->resize();
+		cowWalk7->init();
+		cowWalk[6] = cowWalk7;
+
+		cowWalk8 = new Shape();
+		cowWalk8->loadMesh(resourceDirectory + "/Models/CowWalk/step8.obj");
+		cowWalk8->resize();
+		cowWalk8->init();
+		cowWalk[7] = cowWalk8;
+
+		cowWalk9 = new Shape();
+		cowWalk9->loadMesh(resourceDirectory + "/Models/CowWalk/step9.obj");
+		cowWalk9->resize();
+		cowWalk9->init();
+		cowWalk[8] = cowWalk9;
+
+		cowWalk10 = new Shape();
+		cowWalk10->loadMesh(resourceDirectory + "/Models/CowWalk/step10.obj");
+		cowWalk10->resize();
+		cowWalk10->init();
+		cowWalk[9] = cowWalk10;
 
 		hayShape = new Shape();
 		hayShape->loadMesh(resourceDirectory + "/Models/roundedCube.obj");
@@ -513,10 +586,15 @@ public:
 		cube->resize();
 		cube->init();
 
-		sphere = new Shape();
-		sphere->loadMesh(resourceDirectory + "/Models/sphere.obj");
-		sphere->resize();
-		sphere->init();
+		msShape = new Shape();
+		msShape->loadMesh(resourceDirectory + "/Models/mothership.obj");
+		msShape->resize();
+		msShape->init();
+
+		msiShape = new Shape();
+		msiShape->loadMesh(resourceDirectory + "/Models/mothershipinterior.obj");
+		msiShape->resize();
+		msiShape->init();
 
 		skybox = new SkyBox();
 		skybox->loadMesh(resourceDirectory + "/Models/cube.obj");
@@ -524,18 +602,19 @@ public:
 		skybox->init();
 
 		playerShape = new Shape();
-		playerShape->loadMesh(resourceDirectory + "/Models/cylinder_shell.obj");
+		playerShape->loadMesh(resourceDirectory + "/Models/UFO.obj");
 		playerShape->resize();
 		playerShape->init();
 
 		//TODO replace below defaultTex with textures
 		player = new GamePlayer(playerShape, defaultTex, playerPos, vec3(0.0, -2.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(sphere, defaultTex, 13, MSPos, vec3(0, 0, 0), vec3(15, 1, 15), numCows, numHay);
+		mothership = new GOMothership(msShape, defaultTex, 13, MSPos, vec3(0, 0, 0), vec3(10, 10, 10), numCows, numHay);
 		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5, 5, 5));
 		initMap(&cowObjs, &btreeObjs, &treeObjs, &hayObjs);
 		ground = new Ground(cube, defaultTex, (float)Mwidth, (float)Mheight);
 		initQuad(); //quad for VBO
 	}
+
 
 
 	// geometry set up for a quad
@@ -604,7 +683,7 @@ public:
 					cur->collide(player);
 					player->collide(&*cur);
 				}
-				cur->update(timeScale, Mwidth, Mheight);
+				cur->update(timeScale, Mwidth, Mheight, cowWalk);
 			}
 		}
 
@@ -674,6 +753,7 @@ public:
 		vector<GOTree>::iterator treeI;
 		vector<GOCow>::iterator cowI;
 		vector<GOHaybale>::iterator hayI;
+		vector<Shape*>::iterator cowanimI;
 
 		if (shadowTexture) {
 			//mothership
@@ -708,7 +788,7 @@ public:
 			for(cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
 				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
 					cowI->getTexture()->bind(shadowTexture);
-			  	cowI->draw(curProg, Model);
+					cowI->draw(curProg, Model);
 				}
 			}
 			//hay
@@ -838,29 +918,31 @@ public:
 		ImGui::NewFrame();
 
 		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
+		window_flags |= ImGuiWindowFlags_NoBackground;
 
 		if (show_UI)
 		{
 			ImGui::Begin("Holy Cow", NULL, window_flags);
-
+			ImGui::SetWindowFontScale(2.0f);
 			int collCows = mothership->getCollectedCows();
 			int collHay = mothership->getCollectedHay();
+			
 			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
-
+			(ImGui::GetFontSize() * 100.0f);
 			ImGui::Text("Hay Collected: %d", collHay);
 
 			int cowpoints = collCows * 10;
 			int haypoints = collHay * 7;
 			int totalpoints = cowpoints - haypoints;
-			ImGui::Text("Points earned: %d", totalpoints);
+			ImGui::TextColored(ImVec4(0.0, 0.5, 0.1, 1.0), "Points earned: %d", totalpoints);
 			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
 
 		ImGui::Render();
-		int display_w = 200, display_h = 300;
+		int display_w, display_h;
 		glfwGetFramebufferSize(windowManager->getHandle(), &display_w, &display_h);
-		glViewport(0, 0, display_w, display_h);
+		glViewport(0, 0, display_w	, display_h);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
@@ -868,7 +950,6 @@ public:
 		if (shadowsEnabled) renderShadowDepth();
 		renderSkyBox();
 		renderScene();
-
 		
 		renderGUI();
 	}

@@ -7,7 +7,7 @@ using namespace glm;
 
 
 // constructor
-GOMothership::GOMothership(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale , int maxCows, int maxHay) {
+GOMothership::GOMothership(Shape *shape,  Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale , int maxCows, int maxHay) {
   this->shape = shape;
   this->texture = texture;
 

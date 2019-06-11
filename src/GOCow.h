@@ -24,6 +24,7 @@ using namespace glm;
 class GOCow : public GameObject {
 private:
   bool collected;
+  int walkframe;
 
 public:
   //random constructor
@@ -34,7 +35,7 @@ public:
 
   bool isCollected();
 
-  void update(float timeScale, int Mwidth, int Mheight);
+  void update(float timeScale, int Mwidth, int Mheight, Shape** cowWalk);
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
   void collect();
