@@ -10,9 +10,10 @@ using namespace glm;
 using namespace irrklang;
 
 
-GOCow::GOCow(Shape *shape, Texture *texture, float x, float z) {
+GOCow::GOCow(Shape *shape, Texture *texture, float x, float z, Shape** cowWalk) {
   this->shape = shape;
   this->texture = texture;
+  this->cowWalk = cowWalk;
   radius = 0.5;
   mass = 1;
 
@@ -54,17 +55,20 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
 
 bool GOCow::isCollected()   {   return collected;   }
 
+void GOCow::walk() {
+	int frame = walkframe % 10;
+	shape = cowWalk[frame];
+	framecounter++;
+	if (framecounter % 3 == 0) {
+		walkframe++;
+	}
+}
 
-void GOCow::update(float timeScale, int Mwidth, int Mheight, Shape** cowWalk) {
+void GOCow::update(float timeScale, int Mwidth, int Mheight) {
   float moveMagn = 0.0001f; //walkin' power
   if(position.y == 0) { //if on the ground
     //move in the direction of the rotation
-	  int frame = walkframe % 10;
-	  shape = cowWalk[frame];
-	  framecounter++;
-	  if (framecounter % 3 == 0) {
-		  walkframe++;
-	  }
+	walk();
     netForce += vec3(sin(rotation.y), 0, cos(rotation.y)) * vec3(moveMagn);
   }
   move(timeScale, Mwidth, Mheight);

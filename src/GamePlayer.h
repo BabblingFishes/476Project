@@ -34,6 +34,7 @@ private:
   ISoundEngine* engine;
   ISoundSource* boing;
   vec3 camPosition;
+  bool sparking;
 
   void positionCamera();
 
@@ -48,8 +49,10 @@ public:
 
   bool borderCollision(vec3 nextPos);
     
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight, bool &sparking);
-  void movePlayer(float timeScale, int Mwidth, int Mheight, bool& sparking);
+  bool getSparking();
+
+  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight);
+  void movePlayer(float timeScale, int Mwidth, int Mheight);
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 

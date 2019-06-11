@@ -34,12 +34,16 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   camTheta = rotation.y;
   camZoom = 10;
   positionCamera();
+
+  sparking = false;
+
   engine = createIrrKlangDevice();
   if (!engine)
 	  return;
   boing = engine->addSoundSourceFromFile("../resources/Audio/Boing.mp3");
 }
 
+bool GamePlayer::getSparking() { return sparking; }
 
 float GamePlayer::getCamPhi() { return camPhi; }
 float GamePlayer::getCamTheta() { return camTheta; }
@@ -73,7 +77,7 @@ void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
 /* moves the player and camera */
 //TODO this needs to be done real-time
 //TODO the View logic can probably be abstracted out
-void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight, bool & sparking) {
+void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight) {
   //TODO after implementing real-time, make these values constants
   float moveMagn = 0.01f; //force from player controls
   //float mass = 1; // player mass
@@ -114,14 +118,14 @@ void GamePlayer::update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, in
             netForce += xForce;
     }
 
-  movePlayer(timeScale, Mwidth, Mheight, sparking);
+  movePlayer(timeScale, Mwidth, Mheight);
 
   // place the camera,pointed at the player
   positionCamera();
 }
 
 // uses physics to decide new position
-void GamePlayer::movePlayer(float timeScale, int Mwidth, int Mheight, bool &sparking) {
+void GamePlayer::movePlayer(float timeScale, int Mwidth, int Mheight) {
 	//TODO: add gravity
 	//TODO: spin?
 

@@ -46,6 +46,9 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_glfw.h>
 
+//sounds
+#include <irrKlang/irrKlang.h>
+
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
@@ -59,6 +62,7 @@ Winter 2017 - ZJW (Piddington texture write)
 using namespace std;
 using namespace glm;
 using namespace std::chrono;
+using namespace irrklang;
 
 class Application : public EventCallbacks {
 public:
@@ -324,7 +328,7 @@ public:
 			}
 			else if (strcmp(current, "cow") == 0) {
 				numCows++;
-				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand));
+				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand, cowWalk));
 			}
 			else if (strcmp(current, "haybale") == 0) {
 				numHay++;
@@ -741,7 +745,7 @@ public:
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
 	void update(double timeScale) {
-		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight, sparking);
+		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight);
 
 		vector<GOCow>::iterator cur;
 		for (cur = cowObjs.begin(); cur != cowObjs.end(); cur++) {
@@ -754,7 +758,7 @@ public:
 					cur->collide(player);
 					player->collide(&*cur);
 				}
-				cur->update(timeScale, Mwidth, Mheight, cowWalk);
+				cur->update(timeScale, Mwidth, Mheight);
 			}
 		}
 
@@ -778,7 +782,7 @@ public:
 		// update the particles
 		for (auto particle : particles)
 		{
-			particle->update(t, h, g, sparking);
+			particle->update(t, h, g, player->getSparking());
 		}
 		t += h;
 
@@ -1140,6 +1144,9 @@ int main(int argc, char **argv) {
 	ImGui_ImplGlfw_InitForOpenGL(windowManager->getHandle(), true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 	ImGui::StyleColorsDark();
+
+	//background music
+	ISoundEngine* engine;
 
 	float timeScale = 0;
 	// Loop until the user closes the window.

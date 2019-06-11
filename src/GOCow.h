@@ -30,17 +30,19 @@ private:
   int framecounter;
   ISoundEngine* engine;
   ISoundSource* moo;
+  Shape** cowWalk;
 
 public:
   //random constructor
-  GOCow(Shape *shape, Texture *texture, float x,float z);
+  GOCow(Shape *shape, Texture *texture, float x,float z, Shape** cowWalk);
 
   //specific constructor
   GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
   bool isCollected();
 
-  void update(float timeScale, int Mwidth, int Mheight, Shape** cowWalk);
+  void walk();
+  void update(float timeScale, int Mwidth, int Mheight);
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
   void collect();
