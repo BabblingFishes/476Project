@@ -7,7 +7,7 @@ using namespace std;
 using namespace glm;
 
 // random constructor
-GOHaybale::GOHaybale(Shape* shape, Texture* texture, int x, int z) {
+GOHaybale::GOHaybale(Shape* shape, Texture* texture, float x, float z) {
 	this->shape = shape;
 	this->texture = texture;
 	//radius = 0.45;
@@ -24,7 +24,7 @@ GOHaybale::GOHaybale(Shape* shape, Texture* texture, int x, int z) {
 	//pick a random rotation
 	rotation = vec3(0, (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
 
-	scale = vec3(.75, .45, .45);
+	scale = vec3(.5, .35, .35);
 	velocity = vec3(0.0);
 
 	physEnabled = true;
@@ -63,9 +63,9 @@ void GOHaybale::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
 	}
 	else {
 		material->draw(prog);
+		glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+		shape->draw(prog);
 	}
-	glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-	shape->draw(prog);
 	Model->popMatrix();
 }
 

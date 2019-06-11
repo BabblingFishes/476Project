@@ -8,11 +8,11 @@ using namespace glm;
 using namespace irrklang;
 
 
-GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
+GOCow::GOCow(Shape *shape, Texture *texture, float x, float z, Shape** cowWalk) {
   this->shape = shape;
   this->texture = texture;
-  //radius = 0.5;
-  //height = 0.5;
+  this->cowWalk = cowWalk;
+  radius = 0.5;
   mass = 1;
 
   material = new Material(
@@ -37,6 +37,13 @@ GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   computeDimensions();
 
   collected = false;
+
+  walkframe = 0;
+  framecounter = 0;
+  engine = createIrrKlangDevice();
+  if (!engine)
+	  return;
+  moo = engine->addSoundSourceFromFile("../resources/Audio/Moo.ogg");
   idName = GOid::Cow;
 }
 
@@ -64,6 +71,14 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
 
 bool GOCow::isCollected()   {   return collected;   }
 
+void GOCow::walk() {
+	int frame = walkframe % 10;
+	shape = cowWalk[frame];
+	framecounter++;
+	if (framecounter % 3 == 0) {
+		walkframe++;
+	}
+}
 
 
 bool GOCow::update(float timeScale) {
@@ -72,6 +87,7 @@ bool GOCow::update(float timeScale) {
   float moveMagn = 0.0001f; //walkin' power
   if(position.y == 0) { //if on the ground
     //move in the direction of the rotation
+	walk();
     netForce += vec3(sin(rotation.y), 0, cos(rotation.y)) * vec3(moveMagn);
   }
 
@@ -94,9 +110,9 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
     }
     else {
       material->draw(prog);
+	  glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+	  shape->draw(prog);
     }
-    glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-    shape->draw(prog);
   Model->popMatrix();
 }
 
@@ -110,10 +126,9 @@ void GOCow::collide(GameObject *other) {
       if(!collected) {
         collected = true;
         physEnabled = false;
-        ISoundEngine* engine = createIrrKlangDevice();
-        if (!engine)
-          return;
-        engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
+        if (!engine->isCurrentlyPlaying(moo)) {
+	      	engine->play2D(moo);
+	      }
       }
       break;
     default:

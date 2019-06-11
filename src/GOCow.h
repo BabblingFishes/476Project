@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
@@ -26,17 +27,24 @@ using namespace glm;
 class GOCow : public GameObject {
 private:
   bool collected;
+  int walkframe;
+  int framecounter;
+  ISoundEngine* engine;
+  ISoundSource* moo;
+  Shape** cowWalk;
 
 public:
   //random constructor
-  GOCow(Shape *shape, Texture *texture, int x,int z);
+  GOCow(Shape *shape, Texture *texture, float x,float z, Shape** cowWalk);
 
   //specific constructor
   GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
 
   bool isCollected();
 
+  void walk();
   bool update(float timeScale);
+
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
   void collide(GameObject *other);

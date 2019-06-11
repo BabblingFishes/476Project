@@ -4,6 +4,7 @@
 
 #include <glad/glad.h>
 #include <iostream>
+#include <irrKlang.h>
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -19,6 +20,7 @@
 
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 #define PLAYER_RADIUS 1.0
 #define HEAD_RADIUS 2.0
@@ -31,7 +33,10 @@ private:
   float camPhi;
   float camTheta;
   float camZoom;
+  ISoundEngine* engine;
+  ISoundSource* boing;
   vec3 camPosition;
+  bool sparking;
 
   bool *wasdIsDown;
   bool *arrowIsDown;
@@ -47,7 +52,8 @@ public:
   float getCamPhi();
   float getCamTheta();
 
-  bool borderCollision(vec3 nextPos);
+  bool getSparking();
+  void movePlayer(float timeScale, int Mwidth, int Mheight);
 
   void doControls(bool *wasdIsDown, bool *arrowIsDown);
   bool update(float timeScale);

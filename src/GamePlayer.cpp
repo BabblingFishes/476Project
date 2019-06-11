@@ -1,16 +1,22 @@
 #include "GamePlayer.h"
+#include "Particle.h"
 
-#define MAP_WIDTH 120
-#define MAP_LENGTH 162
+#define MAP_WIDTH 200
+#define MAP_LENGTH 75
+#define EPSILON 0.01
 
 using namespace std;
 using namespace glm;
+using namespace irrklang;
 
 GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotation, vec3 scale) {
   this->shape = shape;
   this->texture = texture;
   this->material = material;
-  this->position = position; //this baby flies
+
+  radius = 10; //this is the beam radius
+  mass = 1;
+  this->position = position;
   this->rotation = rotation;
   this->velocity = velocity;
   this->scale = scale;
@@ -39,9 +45,16 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   camZoom = 10; //10
   positionCamera();
 
+  sparking = false;
+
+  engine = createIrrKlangDevice();
+  if (!engine)
+	  return;
+  boing = engine->addSoundSourceFromFile("../resources/Audio/Boing.mp3");
   idName = GOid::Player;
 }
 
+bool GamePlayer::getSparking() { return sparking; }
 
 float GamePlayer::getCamPhi() { return camPhi; }
 float GamePlayer::getCamTheta() { return camTheta; }
@@ -59,7 +72,7 @@ void GamePlayer::positionCamera() {
 void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   //player model
   Model->pushMatrix();
-    Model->translate(position + vec3(0, height / 2, 0));
+    Model->translate(position + vec3(0, (height / 2) + 1.5, 0));
     Model->rotate(rotation.x, vec3(1, 0, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->rotate(rotation.y, vec3(0, 1, 0));
@@ -120,10 +133,41 @@ bool GamePlayer::update(float timeScale) {
     if (wasdIsDown[2]) netForce -= zForce;
     if (wasdIsDown[3]) netForce += xForce;
 
-  move(timeScale);
+  movePlayer(timeScale, MAP_WIDTH, MAP_LENGTH);
 
-  // place the camera,pointed at the player
   return true;
+}
+
+// uses physics to decide new position
+void GamePlayer::movePlayer(float timeScale, int Mwidth, int Mheight) {
+    //TODO: bounce/spin?
+
+  //gravity
+  if(position.y > EPSILON) {
+    netForce += vec3(0, -0.01, 0) * mass;
+  }
+  else {
+    position.y = 0;
+    if (velocity.y < 0) {
+      velocity.y *= -bounce; //we don't have momentum rn
+      netForce.y -= netForce.y; //normal force from ground
+    }
+  }
+
+  velocity *= 1 - (0.02f * timeScale); // ""friction"" TODO
+  velocity += netForce * timeScale / mass;
+
+  if (borderCollision(position + velocity, MAP_WIDTH, MAP_LENGTH)){
+    sparking = true;
+		engine->play2D(boing);
+  }
+  if (!engine->isCurrentlyPlaying(boing))
+	{
+		sparking = false;
+	}
+
+	position += velocity;
+  netForce = vec3(0);
 }
 
 void GamePlayer::collide(GameObject *other) {

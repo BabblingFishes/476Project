@@ -39,6 +39,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOTree.h"
 #include "GOHaybale.h"
 #include "VFC.h"
+#include "Particle.h"
 #include "QuadTree.h"
 
 //gui
@@ -46,11 +47,16 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
 
+//sounds
+#include <irrKlang.h>
+
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+
+#include <algorithm>
 
 #define DEBUG_MODE true
 
@@ -84,6 +90,20 @@ public:
 	bool CULL = true;
 	bool CULL_DEBUG = false;
 
+	//particle stuff
+	shared_ptr<Program> partprog;
+	vector<shared_ptr<Particle>> particles;
+	int numP = 100;
+	GLfloat points[900];
+	GLfloat pointColors[1200];
+	GLuint pointsbuffer;
+	GLuint colorbuffer;
+	shared_ptr<Texture> ptexture;
+	float t = 0.5f; //reset in init
+	float h = 0.005f;
+	vec3 g = vec3(0.0f, -0.01f, 0.0f);
+	bool sparking = false;
+
 	//cow and haybale counter for the mothership
 	int numCows = 0;
 	int numHay = 0;
@@ -99,9 +119,24 @@ public:
 
 	// Shape to be used (from obj file)
 	Shape *cowShape;
+	Shape* cowWalk1;
+	Shape* cowWalk2;
+	Shape* cowWalk3;
+	Shape* cowWalk4;
+	Shape* cowWalk5;
+	Shape* cowWalk6;
+	Shape* cowWalk7;
+	Shape* cowWalk8;
+	Shape* cowWalk9;
+	Shape* cowWalk10;
+	Shape* cowWalk[10] = { cowWalk1, cowWalk2, cowWalk3, cowWalk4,
+		cowWalk5, cowWalk6, cowWalk7, cowWalk8, cowWalk9, cowWalk10};
+
 	Shape *playerShape;
 	Shape *hayShape;
 	Shape *cube;
+	Shape *msShape;
+	Shape* msiShape;
 	Shape *groundShape;
 	Shape *sphere;
   Shape *treeShape;
@@ -246,9 +281,14 @@ public:
 		// Enable z-buffer test
 		glEnable(GL_DEPTH_TEST);
 
+		CHECKED_GL_CALL(glEnable(GL_BLEND));
+		CHECKED_GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		CHECKED_GL_CALL(glPointSize(14.0f));
+
 		//init GL programs
 		initShadowMapping(resourceDirectory);
 		initSkyBox(resourceDirectory);
+		initParticleSystem(resourceDirectory);
 	}
 
 	//init map from editor
@@ -261,8 +301,6 @@ public:
 		cout << "Map height: " << Mheight << endl;
 		cout << "Area: " << Mheight * Mwidth << endl;
 		cout << "Bytes per pixel: " << bpp << endl;
-
-		//trees = (int*)malloc(Mwidth * Mheight * 2 * sizeof(int));
 
 		int x = 0;
 		int z = 0;
@@ -284,10 +322,8 @@ public:
 			//cout << current << " x:" << x << " z:" << z << endl;
 
 			//random offsets
-			float min = -0.75, max = 0.75;
-			int range = max - min + 1;
-			float xRand = rand() % range + min;
-			float zRand = rand() % range + min;
+			float xRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
+			float zRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 
 			if (strcmp(current, "bordertree") == 0) {
 				btrees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
@@ -297,17 +333,17 @@ public:
 			}
 			else if (strcmp(current, "cow") == 0) {
 				numCows++;
-				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand));
+				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand, cowWalk));
 			}
 			else if (strcmp(current, "haybale") == 0) {
 				numHay++;
 				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
 			}
 			else if (strcmp(current, "player") == 0) {
-				player->setPos(vec3(-x, 0, z)); //boing
+				player->setPos(vec3(-x, 10, z)); //boing
 			}
 			else if (strcmp(current, "mothership") == 0) {
-				mothership->setPos(vec3(-x, 0, z));
+				mothership->setPos(vec3(-x, -0.5, z));
 			}
 			else if (strcmp(current, "barn") == 0) {
 				barn->setPos(vec3(-x, 0, z));
@@ -450,7 +486,6 @@ public:
   	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-
 	// loads & initializes skybox textures
 	void initTex(const std::string& resourceDirectory) {
 		vector<std::string> faces {
@@ -468,6 +503,60 @@ public:
 		defaultTex->init();
 		defaultTex->setUnit(0);
 		defaultTex->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+	}
+
+	void initParticleSystem(const std::string& resourceDirectory)
+	{
+		partprog = make_shared<Program>();
+		partprog->setVerbose(true);
+		partprog->setShaderNames(
+			resourceDirectory + "/part_vert.glsl",
+			resourceDirectory + "/part_frag.glsl");
+		if (!partprog->init())
+		{
+			std::cerr << "One or more particle shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+		partprog->addUniform("P");
+		partprog->addUniform("M");
+		partprog->addUniform("V");
+		partprog->addUniform("alphaTexture");
+		partprog->addAttribute("vertPos");
+	}
+
+	void initParticles(const std::string& resourceDirectory)
+	{
+		ptexture = make_shared<Texture>();
+		ptexture->setFilename(resourceDirectory + "/sparkalpha.bmp");
+		ptexture->init();
+		ptexture->setUnit(0);
+		ptexture->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
+		int n = numP;
+
+		for (int i = 0; i < n; ++i)
+		{
+			auto particle = make_shared<Particle>();
+			particles.push_back(particle);
+			particle->load();
+		}
+
+		// generate the VAO
+		CHECKED_GL_CALL(glGenVertexArrays(1, &VertexArrayID));
+		CHECKED_GL_CALL(glBindVertexArray(VertexArrayID));
+
+		// generate vertex buffer to hand off to OGL - using instancing
+		CHECKED_GL_CALL(glGenBuffers(1, &pointsbuffer));
+		// set the current state to focus on our vertex buffer
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
+		// actually memcopy the data - only do this once
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(points), NULL, GL_STREAM_DRAW));
+
+		CHECKED_GL_CALL(glGenBuffers(1, &colorbuffer));
+		// set the current state to focus on our vertex buffer
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, colorbuffer));
+		// actually memcopy the data - only do this once
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(pointColors), NULL, GL_STREAM_DRAW));
 	}
 
 	unsigned int createSky(string dir, vector<string> faces) {
@@ -506,6 +595,66 @@ public:
 		cowShape->resize();
 		cowShape->init();
 
+		cowWalk1 = new Shape();
+		cowWalk1->loadMesh(resourceDirectory + "/Models/CowWalk/step1.obj");
+		cowWalk1->resize();
+		cowWalk1->init();
+		cowWalk[0] = cowWalk1;
+
+		cowWalk2 = new Shape();
+		cowWalk2->loadMesh(resourceDirectory + "/Models/CowWalk/step2.obj");
+		cowWalk2->resize();
+		cowWalk2->init();
+		cowWalk[1] = cowWalk2;
+
+		cowWalk3 = new Shape();
+		cowWalk3->loadMesh(resourceDirectory + "/Models/CowWalk/step3.obj");
+		cowWalk3->resize();
+		cowWalk3->init();
+		cowWalk[2] = cowWalk3;
+
+		cowWalk4 = new Shape();
+		cowWalk4->loadMesh(resourceDirectory + "/Models/CowWalk/step4.obj");
+		cowWalk4->resize();
+		cowWalk4->init();
+		cowWalk[3] = cowWalk4;
+
+		cowWalk5 = new Shape();
+		cowWalk5->loadMesh(resourceDirectory + "/Models/CowWalk/step5.obj");
+		cowWalk5->resize();
+		cowWalk5->init();
+		cowWalk[4] = cowWalk5;
+
+		cowWalk6 = new Shape();
+		cowWalk6->loadMesh(resourceDirectory + "/Models/CowWalk/step6.obj");
+		cowWalk6->resize();
+		cowWalk6->init();
+		cowWalk[5] = cowWalk6;
+
+		cowWalk7 = new Shape();
+		cowWalk7->loadMesh(resourceDirectory + "/Models/CowWalk/step7.obj");
+		cowWalk7->resize();
+		cowWalk7->init();
+		cowWalk[6] = cowWalk7;
+
+		cowWalk8 = new Shape();
+		cowWalk8->loadMesh(resourceDirectory + "/Models/CowWalk/step8.obj");
+		cowWalk8->resize();
+		cowWalk8->init();
+		cowWalk[7] = cowWalk8;
+
+		cowWalk9 = new Shape();
+		cowWalk9->loadMesh(resourceDirectory + "/Models/CowWalk/step9.obj");
+		cowWalk9->resize();
+		cowWalk9->init();
+		cowWalk[8] = cowWalk9;
+
+		cowWalk10 = new Shape();
+		cowWalk10->loadMesh(resourceDirectory + "/Models/CowWalk/step10.obj");
+		cowWalk10->resize();
+		cowWalk10->init();
+		cowWalk[9] = cowWalk10;
+
 		hayShape = new Shape();
 		hayShape->loadMesh(resourceDirectory + "/Models/roundedCube.obj");
 		hayShape->resize();
@@ -532,10 +681,15 @@ public:
 		cube->resize();
 		cube->init();
 
-		sphere = new Shape();
-		sphere->loadMesh(resourceDirectory + "/Models/sphere.obj");
-		sphere->resize();
-		sphere->init();
+		msShape = new Shape();
+		msShape->loadMesh(resourceDirectory + "/Models/mothership.obj");
+		msShape->resize();
+		msShape->init();
+
+		msiShape = new Shape();
+		msiShape->loadMesh(resourceDirectory + "/Models/mothershipinterior.obj");
+		msiShape->resize();
+		msiShape->init();
 
 		skybox = new SkyBox();
 		skybox->loadMesh(resourceDirectory + "/Models/cube.obj");
@@ -543,15 +697,14 @@ public:
 		skybox->init();
 
 		playerShape = new Shape();
-		playerShape->loadMesh(resourceDirectory + "/Models/cylinder_shell.obj");
+		playerShape->loadMesh(resourceDirectory + "/Models/UFO.obj");
 		playerShape->resize();
 		playerShape->init();
 
 		//TODO replace below defaultTex with textures
-		player = new GamePlayer(playerShape, defaultTex, vec3(0.0), vec3(0.0, 0.0, 0.0), vec3(1.0));
-		//player = new GamePlayer(playerShape, defaultTex, vec3(0.0), vec3(0.0, -2.0, 0.0), vec3(1.0)); //TODO put rotation back
-		mothership = new GOMothership(sphere, defaultTex, 13, vec3(100.0), vec3(0.0), vec3(15, 1, 15), numCows, numHay);
-		barn = new GOBarn(barnShape, defaultTex, vec3(100.0), vec3(0.0), vec3(5.0));
+		player = new GamePlayer(playerShape, defaultTex, vec3(0.0), vec3(0.0, -2.0, 0.0), vec3(1.0));
+		mothership = new GOMothership(msShape, defaultTex, 10, vec3(0.0), vec3(0.0), vec3(10.0), numCows, numHay);
+		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5.0));
 		initMap(&cowObjs, &btreeObjs, &treeObjs, &hayObjs);
 		ground = new Ground(groundShape, defaultTex, (float)Mwidth, (float)Mheight);
 		initQuad(); //quad for VBO
@@ -642,6 +795,50 @@ public:
 		//TODO see above but for haybales
 	}
 
+	void updateParticles()
+	{
+		// update the particles
+		for (auto particle : particles)
+		{
+			particle->update(t, h, g, player->getSparking());
+		}
+		t += h;
+
+		// Sort the particles by Z
+		auto temp = make_shared<MatrixStack>();
+		temp->rotate(player->getCamTheta(), vec3(0, 1, 0));
+
+		ParticleSorter sorter;
+		sorter.C = temp->topMatrix();
+		std::sort(particles.begin(), particles.end(), sorter);
+
+
+		vec3 pos;
+		vec4 col;
+		// go through all the particles and update the CPU buffer
+		for (int i = 0; i < numP; i++)
+		{
+			pos = particles[i]->getPosition();
+			col = particles[i]->getColor();
+			points[i * 3 + 0] = pos.x;
+			points[i * 3 + 1] = pos.y;
+			points[i * 3 + 2] = pos.z;
+			pointColors[i * 4 + 0] = col.r + col.a / 10.f;
+			pointColors[i * 4 + 1] = col.g + col.g / 10.f;
+			pointColors[i * 4 + 2] = col.b + col.b / 10.f;
+			pointColors[i * 4 + 3] = col.a;
+		}
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(points), NULL, GL_STREAM_DRAW));
+		CHECKED_GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * numP * 3, points));
+
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, colorbuffer));
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(pointColors), NULL, GL_STREAM_DRAW));
+		CHECKED_GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * numP * 4, pointColors));
+
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	}
+
 
 	/***** Rendering *****/
 
@@ -714,7 +911,7 @@ public:
 			for(vector<GOCow>::iterator cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
 				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
 					cowI->getTexture()->bind(shadowTexture);
-			  	cowI->draw(curProg, Model);
+					cowI->draw(curProg, Model);
 				}
 			}
 			//hay
@@ -837,35 +1034,76 @@ public:
 		shadowProg->unbind();
 	}
 
+	void renderParticles() {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		auto M = make_shared<MatrixStack>();
+		auto V = make_shared<MatrixStack>();
+
+		M->pushMatrix();
+		M->loadIdentity();
+
+		V->pushMatrix();
+		V->loadIdentity();
+
+		partprog->bind();
+		updateParticles();
+
+		ptexture->bind(partprog->getUniform("alphaTexture"));
+		setProjectionMatrix_OLD(partprog);
+		CHECKED_GL_CALL(glUniformMatrix4fv(partprog->getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix())));
+		CHECKED_GL_CALL(glUniformMatrix4fv(partprog->getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix())));
+
+		CHECKED_GL_CALL(glEnableVertexAttribArray(0));
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
+		CHECKED_GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0));
+
+		CHECKED_GL_CALL(glEnableVertexAttribArray(1));
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, colorbuffer));
+		CHECKED_GL_CALL(glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)0));
+
+		CHECKED_GL_CALL(glVertexAttribDivisor(0, 1));
+		CHECKED_GL_CALL(glVertexAttribDivisor(1, 1));
+		// Draw the points !
+		CHECKED_GL_CALL(glDrawArraysInstanced(GL_POINTS, 0, 1, numP));
+
+		CHECKED_GL_CALL(glVertexAttribDivisor(0, 0));
+		CHECKED_GL_CALL(glVertexAttribDivisor(1, 0));
+		CHECKED_GL_CALL(glDisableVertexAttribArray(0));
+		CHECKED_GL_CALL(glDisableVertexAttribArray(1));
+		partprog->unbind();
+	}
+
 	void renderGUI() {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
 		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
+		window_flags |= ImGuiWindowFlags_NoBackground;
 
 		if (show_UI)
 		{
 			ImGui::Begin("Holy Cow", NULL, window_flags);
-
+			ImGui::SetWindowFontScale(2.0f);
 			int collCows = mothership->getCollectedCows();
 			int collHay = mothership->getCollectedHay();
-			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
 
+			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
+			(ImGui::GetFontSize() * 100.0f);
 			ImGui::Text("Hay Collected: %d", collHay);
 
 			int cowpoints = collCows * 10;
 			int haypoints = collHay * 7;
 			int totalpoints = cowpoints - haypoints;
-			ImGui::Text("Points earned: %d", totalpoints);
+			ImGui::TextColored(ImVec4(1.0, 0.5, 0.5, 1.0), "Points earned: %d", totalpoints);
 			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
 
 		ImGui::Render();
-		int display_w = 200, display_h = 300;
+		int display_w, display_h;
 		glfwGetFramebufferSize(windowManager->getHandle(), &display_w, &display_h);
-		glViewport(0, 0, display_w, display_h);
+		glViewport(0, 0, display_w	, display_h);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
@@ -874,6 +1112,7 @@ public:
 		renderSkyBox();
 		renderScene();
 		renderGUI();
+		renderParticles();
 	}
 };
 
@@ -898,6 +1137,7 @@ int main(int argc, char **argv) {
 
 	application->init(resourceDir);
 	application->initTex(resourceDir);
+	application->initParticles(resourceDir);
 	application->initGeom(resourceDir);
 
 	//gui stuff
@@ -907,6 +1147,9 @@ int main(int argc, char **argv) {
 	ImGui_ImplGlfw_InitForOpenGL(windowManager->getHandle(), true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 	ImGui::StyleColorsDark();
+
+	//background music
+	ISoundEngine* engine;
 
 	float timeScale = 0;
 	// Loop until the user closes the window.

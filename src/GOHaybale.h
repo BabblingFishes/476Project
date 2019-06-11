@@ -27,7 +27,7 @@ private:
 	bool collected;
 
 public:
-	GOHaybale(Shape* shape, Texture* texture, int x, int z);
+	GOHaybale(Shape* shape, Texture* texture, float x, float z);
 
 	bool isCollected();
 
