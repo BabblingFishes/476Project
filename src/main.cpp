@@ -41,9 +41,9 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "VFC.h"
 
 //gui
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_opengl3.h>
-#include <imgui/imgui_impl_glfw.h>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_glfw.h"
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -68,9 +68,13 @@ public:
 	// shader programs
 	shared_ptr<Program> skyProg;
 	shared_ptr<Program> depthProg;
+    shared_ptr<Program> DepthProgDebug;
 	shared_ptr<Program> shadowProg;
+    shared_ptr<Program> DebugProg;
 
 	// shadowmapping
+    int DEBUG_LIGHT = 0;
+    int GEOM_DEBUG = 0;
 	mat4 lightP;
 	mat4 lightV;
 	bool shadowsEnabled = true; //TODO set this elsewhere
@@ -179,6 +183,9 @@ public:
   			case GLFW_KEY_ESCAPE:
   				glfwSetWindowShouldClose(window, GL_TRUE);
   				break;
+            case GLFW_KEY_L:
+                DEBUG_LIGHT = !DEBUG_LIGHT;
+                break;
 				//switches between drawing solids, wireframes, and points for debugging
         case GLFW_KEY_M:
 					if(DEBUG_MODE){
@@ -383,7 +390,25 @@ public:
 		depthProg->addUniform("matSpec"); //red'd by objects
 		depthProg->addUniform("shine"); //red'd by objects
 
+        
+        DepthProgDebug = make_shared<Program>();
+        DepthProgDebug->setVerbose(true);
+        DepthProgDebug->setShaderNames(resourceDirectory + "/depth_vertDebug.glsl", resourceDirectory + "/depth_fragDebug.glsl");
+        DepthProgDebug->init();
+        
+        DepthProgDebug->addUniform("LP");
+        DepthProgDebug->addUniform("LV");
+        DepthProgDebug->addUniform("M");
+        DepthProgDebug->addAttribute("vertPos");
+        //un-needed, but easier then modifying shape
+        DepthProgDebug->addAttribute("vertNor");
+        DepthProgDebug->addAttribute("vertTex");
+        DepthProgDebug->addUniform("matAmb"); //red'd by objects
+        DepthProgDebug->addUniform("matDif"); //red'd by objects
+        DepthProgDebug->addUniform("matSpec"); //red'd by objects
+        DepthProgDebug->addUniform("shine"); //red'd by objects
 
+        
 		shadowProg = make_shared<Program>();
 		shadowProg->setVerbose(true);
 		shadowProg->setShaderNames(resourceDirectory + "/shadow_vert_BP.glsl", resourceDirectory + "/shadow_frag_BP.glsl");
@@ -400,6 +425,7 @@ public:
 		shadowProg->addUniform("matSpec");
 		shadowProg->addUniform("shine");
 		shadowProg->addUniform("LS");
+        //shadowProg->addUniform("lightDir");
 		shadowProg->addUniform("camPos");
 		shadowProg->addUniform("lightPos");
 		shadowProg->addUniform("lightClr");
@@ -408,6 +434,15 @@ public:
 		shadowProg->addAttribute("vertTex");
 		shadowProg->addUniform("Texture0");
 		shadowProg->addUniform("shadowDepth");
+        
+        
+        DebugProg = make_shared<Program>();
+        DebugProg->setVerbose(true);
+        DebugProg->setShaderNames(resourceDirectory + "/pass_vert.glsl", resourceDirectory + "/pass_texfrag.glsl");
+        DebugProg->init();
+        
+        DebugProg->addUniform("texBuf");
+        DebugProg->addAttribute("vertPos");
 
 		initDepthBuffer();
 	}
@@ -425,8 +460,8 @@ public:
 
   	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//bind with framebuffer's depth buffer
   	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -632,7 +667,7 @@ public:
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
 		//glViewport(0, 0, width, height); ??
 		float aspect = width/(float)height;
-		mat4 Projection = perspective(radians(45.0f), aspect, 0.01f, 100.0f);
+		mat4 Projection = perspective(radians(50.0f), aspect, 0.01f, 100.0f);
 		glUniformMatrix4fv(curProg->getUniform("P"), 1, GL_FALSE, value_ptr(Projection));
 	}
 
@@ -646,9 +681,9 @@ public:
 
 /* V - camera view */
   void setView_OLD(shared_ptr<Program> curProg) {
-		vec3 camPos = player->getCamPos();
-		glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
-  	mat4 View = glm::lookAt(camPos, player->getPos(), vec3(0, 1, 0));
+		//vec3 camPos = player->getCamPos();
+		//glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
+  	mat4 View = glm::lookAt(player->getCamPos(), player->getPos(), vec3(0, 1, 0));
   	glUniformMatrix4fv(curProg->getUniform("V"), 1, GL_FALSE, value_ptr(View));
   }
 
@@ -795,7 +830,11 @@ public:
 		//render scene
 		depthProg->bind();
 		lightP = setOrthoMatrix(depthProg);
-		lightV = setLightView(depthProg, player->getPos() + vec3(0, 10, 0), player->getPos() - vec3(0, 1, 0), vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
+		lightV = setLightView(depthProg, player->getPos() + vec3(0, 27, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x + 10, 1, player->getPos().z - 10)*/, vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
+        
+        //cout << "LightPos.X: " << (player->getPos() + vec3(0, 30, 0)).x << ", Lookat.X: " << (player->getPos() + vec3(-0.1, 25, -0.1)).x << endl;
+        //cout << "LightPos.Y: " << (player->getPos() + vec3(-2 * player->getPos().x, 10, 0)).y << ", Lookat.Y: " << (player->getPos() - vec3(-2 * player->getPos().x, 1, 0)).y << endl;
+        //cout << "LightPos.Z: " << (player->getPos() + vec3(-2 * player->getPos().x, 30, 0)).z << ", Lookat.Z: " << (player->getPos() + vec3(-0.1, 25, -0.1)).z << endl;
 		drawScene(depthProg, 0);
 		depthProg->unbind();
 
@@ -810,16 +849,42 @@ public:
 		glViewport(0, 0, width, height); //view to window size
 		glClear(GL_DEPTH_BUFFER_BIT); //clear framebuffer
 
+        if (DEBUG_LIGHT) {
+            if (GEOM_DEBUG) {
+                DepthProgDebug->bind();
+                SetOrthoMatrix(DepthProgDebug);
+                setLightView(depthProg, player->getPos() + vec3(0, 27, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x - 10, 1, player->getPos().z + 10)*/, vec3(0, 1, 0));
+                drawScene(DepthProgDebug, shadowProg->getUniform("Texture0"));
+                DepthProgDebug->unbind();
+            }
+            else {
+                DebugProg->bind();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, depthMap);
+                glUniform1i(DebugProg->getUniform("texBuf"), 0);
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                glDisableVertexAttribArray(0);
+                DebugProg->unbind();
+            }
+        }
+        else {
 		//set up shadow shader
 		shadowProg->bind();
 		/* also set up light depth map */
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
 		glUniform1i(shadowProg->getUniform("shadowDepth"), 1);
+        //glUniform3f(shadowProg->getUniform("lightDir"), player->getPos().x, player->getPos().y + 10, player->getPos().z);
+            //cout << "X: " << -player->getPos().x << ", Y: " << player->getPos().y + 10 << ", Z: " << player->getPos().z << endl;
 		//pass in light info
 		glUniform3f(shadowProg->getUniform("lightPos"), player->getPos().x, player->getPos().y, player->getPos().z);
 		glUniform3f(shadowProg->getUniform("lightClr"), 0.3f, 0.3f, 0.3f);
 		//render scene
+        setProjectionMatrix_OLD(shadowProg);
+        setView_OLD(shadowProg);
 		mat4 P = SetProjectionMatrix(shadowProg, windowManager, width, height);
 		mat4 V = SetView(shadowProg, player->getCamPos(), player->getPos());
 		ExtractVFPlanes(P, V);
@@ -830,6 +895,7 @@ public:
 
 		drawScene(shadowProg, shadowProg->getUniform("Texture0"));
 		shadowProg->unbind();
+        }
 	}
 
 	void renderGUI() {

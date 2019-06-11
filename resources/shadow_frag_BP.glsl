@@ -17,6 +17,7 @@ out vec4 color;
 uniform vec3 lightClr;
 uniform vec3 matDif, matAmb, matSpec;
 uniform float shine;
+//uniform vec3 lightDir;
 
 /* returns 1 if shadowed */
 /* called with the point projected into the light's coordinate space */
@@ -27,8 +28,8 @@ float testShadow(vec4 LSfPos) {
   float lightDepth = texture(shadowDepth, shifted.xy).r; //read off stored shadow depth
 
 	//compare to projected depth, return 1 if shadowed
-  if (lightDepth < shifted.z - bias) return 1.0;
-	return 0.0;
+  if (lightDepth < shifted.z - bias) return 0.0;
+	return 1.0;
 }
 
 void main() {
@@ -39,15 +40,15 @@ void main() {
 		float fallOff = distance(lightDir, fragNor) / 25.0f;
     //float fallOff = 1; //TODO
 		vec3 normal = normalize(fragNor);
-    vec3 half_norm = normalize(vec3(halfVec));
-    vec3 L_norm = normalize(vec3(lightDir));
+    vec3 half_norm = normalize(halfVec);
+    vec3 L_norm = normalize(lightDir);
 
     vec3 diffuseRefl = matDif * max(0, dot(normal, L_norm));
     //vec3 specularRefl = matSpec * pow(max(dot(normal, half_norm), 0.0), shine);
     vec3 specularRefl = matSpec * pow(max(dot(half_norm, normal), 0.0), shine);
     vec3 ambientRefl = matAmb;
 
-    vec3 ReflColor = (ambientRefl + diffuseRefl + specularRefl) * lightClr / fallOff;
+    vec3 ReflColor = (((ambientRefl * (shade)) + diffuseRefl + specularRefl) * lightClr) / fallOff;
 
     //color = amb*(texColor0) + (1.0-Shade)*texColor0*BaseColor;
 		//color = 0.3 * (texColor0) + (1.0 - shade) * texColor0 * vec4(vColor, 1.0);
