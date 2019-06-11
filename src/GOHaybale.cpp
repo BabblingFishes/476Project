@@ -7,7 +7,7 @@ using namespace std;
 using namespace glm;
 
 // random constructor
-GOHaybale::GOHaybale(Shape* shape, Texture* texture, int x, int z) {
+GOHaybale::GOHaybale(Shape* shape, Texture* texture, float x, float z) {
 	this->shape = shape;
 	this->texture = texture;
 	radius = 0.45;

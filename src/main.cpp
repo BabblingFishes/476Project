@@ -39,6 +39,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOTree.h"
 #include "GOHaybale.h"
 #include "VFC.h"
+#include "Particle.h"
 
 //gui
 #include <imgui/imgui.h>
@@ -50,6 +51,8 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+
+#include <algorithm>
 
 #define DEBUG_MODE true
 
@@ -81,6 +84,19 @@ public:
 	//VFCing
 	bool CULL = true;
 	bool CULL_DEBUG = false;
+
+	//particle stuff
+	shared_ptr<Program> partprog;
+	vector<shared_ptr<Particle>> particles;
+	int numP = 300;
+	GLfloat points[900];
+	GLfloat pointColors[1200];
+	GLuint pointsbuffer;
+	GLuint colorbuffer;
+	shared_ptr<Texture> ptexture;
+	float t = 0.0f; //reset in init
+	float h = 0.01f;
+	vec3 g = vec3(0.0f, -0.01f, 0.0f);
 
 	//cow and haybale counter for the mothership
 	int numCows = 0;
@@ -255,9 +271,14 @@ public:
 		// Enable z-buffer test
 		glEnable(GL_DEPTH_TEST);
 
+		CHECKED_GL_CALL(glEnable(GL_BLEND));
+		CHECKED_GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		CHECKED_GL_CALL(glPointSize(14.0f));
+
 		//init GL programs
 		initShadowMapping(resourceDirectory);
 		initSkyBox(resourceDirectory);
+		initParticleSystem(resourceDirectory);
 	}
 
 	//init map from editor
@@ -291,11 +312,8 @@ public:
 			//cout << current << " x:" << x << " z:" << z << endl;
 
 			//random offsets
-			float min = -0.75;
-			float max = 0.75;
-			int range = max - min + 1;
-			float xRand = rand() % range + min;
-			float zRand = rand() % range + min;
+			float xRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
+			float zRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 
 			if (strcmp(current, "bordertree") == 0) {
 				btrees->push_back(GOBorder(treeShape, defaultTex, 1, vec3(-x + xRand, 3 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
@@ -467,6 +485,61 @@ public:
 		defaultTex->init();
 		defaultTex->setUnit(0);
 		defaultTex->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+	}
+
+	void initParticleSystem(const std::string& resourceDirectory)
+	{
+		partprog = make_shared<Program>();
+		partprog->setVerbose(true);
+		partprog->setShaderNames(
+			resourceDirectory + "/part_vert.glsl",
+			resourceDirectory + "/part_frag.glsl");
+		if (!partprog->init())
+		{
+			std::cerr << "One or more particle shaders failed to compile... exiting!" << std::endl;
+			exit(1);
+		}
+		partprog->addUniform("P");
+		partprog->addUniform("M");
+		partprog->addUniform("V");
+		partprog->addUniform("alphaTexture");
+		partprog->addAttribute("vertPos");
+	}
+
+
+	void initParticles(const std::string& resourceDirectory)
+	{
+		ptexture = make_shared<Texture>();
+		ptexture->setFilename(resourceDirectory + "/alpha.bmp");
+		ptexture->init();
+		ptexture->setUnit(0);
+		ptexture->setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+
+		int n = numP;
+
+		for (int i = 0; i < n; ++i)
+		{
+			auto particle = make_shared<Particle>();
+			particles.push_back(particle);
+			particle->load();
+		}
+
+		// generate the VAO
+		CHECKED_GL_CALL(glGenVertexArrays(1, &VertexArrayID));
+		CHECKED_GL_CALL(glBindVertexArray(VertexArrayID));
+
+		// generate vertex buffer to hand off to OGL - using instancing
+		CHECKED_GL_CALL(glGenBuffers(1, &pointsbuffer));
+		// set the current state to focus on our vertex buffer
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
+		// actually memcopy the data - only do this once
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(points), NULL, GL_STREAM_DRAW));
+
+		CHECKED_GL_CALL(glGenBuffers(1, &colorbuffer));
+		// set the current state to focus on our vertex buffer
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, colorbuffer));
+		// actually memcopy the data - only do this once
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(pointColors), NULL, GL_STREAM_DRAW));
 	}
 
 	unsigned int createSky(string dir, vector<string> faces) {
@@ -702,6 +775,50 @@ public:
 		}
 	}
 
+	void updateParticles()
+	{
+		// update the particles
+		for (auto particle : particles)
+		{
+			particle->update(t, h, g);
+		}
+		t += h;
+
+		// Sort the particles by Z
+		auto temp = make_shared<MatrixStack>();
+		temp->rotate(player->getCamTheta(), vec3(0, 1, 0));
+
+		ParticleSorter sorter;
+		sorter.C = temp->topMatrix();
+		std::sort(particles.begin(), particles.end(), sorter);
+
+
+		vec3 pos;
+		vec4 col;
+		// go through all the particles and update the CPU buffer
+		for (int i = 0; i < numP; i++)
+		{
+			pos = particles[i]->getPosition();
+			col = particles[i]->getColor();
+			points[i * 3 + 0] = pos.x;
+			points[i * 3 + 1] = pos.y;
+			points[i * 3 + 2] = pos.z;
+			pointColors[i * 4 + 0] = col.r + col.a / 10.f;
+			pointColors[i * 4 + 1] = col.g + col.g / 10.f;
+			pointColors[i * 4 + 2] = col.b + col.b / 10.f;
+			pointColors[i * 4 + 3] = col.a;
+		}
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(points), NULL, GL_STREAM_DRAW));
+		CHECKED_GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * numP * 3, points));
+
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, colorbuffer));
+		CHECKED_GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(pointColors), NULL, GL_STREAM_DRAW));
+		CHECKED_GL_CALL(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * numP * 4, pointColors));
+
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	}
+
 
 	/***** Rendering *****/
 
@@ -912,6 +1029,46 @@ public:
 		shadowProg->unbind();
 	}
 
+	void renderParticles() {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		
+		auto M = make_shared<MatrixStack>();
+		auto V = make_shared<MatrixStack>();
+
+		M->pushMatrix();
+		M->loadIdentity();
+
+		V->pushMatrix();
+		V->loadIdentity();
+
+		partprog->bind();
+		updateParticles();
+
+		ptexture->bind(partprog->getUniform("alphaTexture"));
+		setProjectionMatrix_OLD(partprog);
+		CHECKED_GL_CALL(glUniformMatrix4fv(partprog->getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix())));
+		CHECKED_GL_CALL(glUniformMatrix4fv(partprog->getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix())));
+
+		CHECKED_GL_CALL(glEnableVertexAttribArray(0));
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, pointsbuffer));
+		CHECKED_GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0));
+
+		CHECKED_GL_CALL(glEnableVertexAttribArray(1));
+		CHECKED_GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, colorbuffer));
+		CHECKED_GL_CALL(glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)0));
+
+		CHECKED_GL_CALL(glVertexAttribDivisor(0, 1));
+		CHECKED_GL_CALL(glVertexAttribDivisor(1, 1));
+		// Draw the points !
+		CHECKED_GL_CALL(glDrawArraysInstanced(GL_POINTS, 0, 1, numP));
+
+		CHECKED_GL_CALL(glVertexAttribDivisor(0, 0));
+		CHECKED_GL_CALL(glVertexAttribDivisor(1, 0));
+		CHECKED_GL_CALL(glDisableVertexAttribArray(0));
+		CHECKED_GL_CALL(glDisableVertexAttribArray(1));
+		partprog->unbind();
+	}
+
 	void renderGUI() {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -950,7 +1107,7 @@ public:
 		if (shadowsEnabled) renderShadowDepth();
 		renderSkyBox();
 		renderScene();
-		
+		renderParticles();
 		renderGUI();
 	}
 };
@@ -976,6 +1133,7 @@ int main(int argc, char **argv) {
 
 	application->init(resourceDir);
 	application->initTex(resourceDir);
+	application->initParticles(resourceDir);
 	application->initGeom(resourceDir);
 
 	//gui stuff

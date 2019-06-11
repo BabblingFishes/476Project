@@ -10,7 +10,7 @@ using namespace glm;
 using namespace irrklang;
 
 
-GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
+GOCow::GOCow(Shape *shape, Texture *texture, float x, float z) {
   this->shape = shape;
   this->texture = texture;
   radius = 0.5;

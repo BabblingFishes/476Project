@@ -28,7 +28,7 @@ private:
 
 public:
   //random constructor
-  GOCow(Shape *shape, Texture *texture, int x,int z);
+  GOCow(Shape *shape, Texture *texture, float x,float z);
 
   //specific constructor
   GOCow(Shape *shape, Texture *texture, Material *material, float radius, vec3 position, vec3 rotation, vec3 scale, vec3 velocity);
