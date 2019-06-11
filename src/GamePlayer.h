@@ -28,6 +28,8 @@ using namespace irrklang;
 class GamePlayer : public GameObject {
 private:
   float shipRadius;
+  float beamStrength;
+
   float camPhi;
   float camTheta;
   float camZoom;
@@ -36,7 +38,10 @@ private:
   vec3 camPosition;
   bool sparking;
 
-  void positionCamera();
+  bool *wasdIsDown;
+  bool *arrowIsDown;
+
+  void shipCollide(GameObject *other);
 
 public:
 
@@ -50,15 +55,15 @@ public:
   bool borderCollision(vec3 nextPos);
     
   bool getSparking();
-
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight);
   void movePlayer(float timeScale, int Mwidth, int Mheight);
+
+  void doControls(bool *wasdIsDown, bool *arrowIsDown);
+  bool update(float timeScale);
+  void positionCamera();
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 
-  void collide(GOCow *cow);
-
-  void collide(GOHaybale *hay);
+  void collide(GameObject *other);
 
   void beamIn(GameObject *other);
 };

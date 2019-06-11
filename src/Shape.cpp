@@ -5,7 +5,7 @@
 #include "Program.h"
 
 #include <cassert>
-#include <tiny_obj_loader/tiny_obj_loader.h>
+#include <tiny_obj_loader.h>
 
 using namespace std;
 
@@ -74,12 +74,18 @@ void Shape::resize()
 	{
 		maxExtent = zExtent;
 	}
+
 	scaleX = 2.0f / maxExtent;
 	shiftX = minX + (xExtent / 2.0f);
 	scaleY = 2.0f / maxExtent;
 	shiftY = minY + (yExtent / 2.0f);
 	scaleZ = 2.0f / maxExtent;
 	shiftZ = minZ + (zExtent / 2.0f);
+
+	// save the dimensions
+	width = xExtent * scaleX;
+	height = yExtent * scaleY;
+	length = zExtent * scaleZ;
 
 	// Go through all verticies shift and scale them
 	for (size_t v = 0; v < posBuf.size() / 3; v++)
@@ -183,15 +189,17 @@ void Shape::draw(const shared_ptr<Program> prog) const
 	glDrawElements(GL_TRIANGLES, (int)eleBuf.size(), GL_UNSIGNED_INT, (const void *)0);
 
 	// Disable and unbind
-	if (h_tex != -1)
-	{
+	if (h_tex != -1) {
 		GLSL::disableVertexAttribArray(h_tex);
 	}
-	if (h_nor != -1)
-	{
+	if (h_nor != -1) {
 		GLSL::disableVertexAttribArray(h_nor);
 	}
 	GLSL::disableVertexAttribArray(h_pos);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
+
+float Shape::getHeight() { return height; }
+float Shape::getWidth() { return width; }
+float Shape::getLength() { return width; }

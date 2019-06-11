@@ -15,11 +15,11 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
+#include <irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
 #include "stb_image.h"
-
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -40,14 +40,16 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOHaybale.h"
 #include "VFC.h"
 #include "Particle.h"
+=======
+#include "QuadTree.h"
 
 //gui
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_opengl3.h>
-#include <imgui/imgui_impl_glfw.h>
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_glfw.h>
 
 //sounds
-#include <irrKlang/irrKlang.h>
+#include <irrKlang.h>
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -110,6 +112,8 @@ public:
 	//map width and height
 	int Mwidth, Mheight;
 
+	shared_ptr<QuadTree> quadTree;
+
 	//default positions
 	vec3 playerPos;// = vec3(40.0, 0.0, -60.0);
 	vec3 MSPos;// = vec3(-20.0, 0.0, 20.0);
@@ -130,12 +134,14 @@ public:
 		cowWalk5, cowWalk6, cowWalk7, cowWalk8, cowWalk9, cowWalk10};
 
 	Shape *playerShape;
-	Shape* hayShape;
+	Shape *hayShape;
 	Shape *cube;
 	Shape *msShape;
 	Shape* msiShape;
-    Shape *treeShape;
-	Shape* barnShape;
+	Shape *groundShape;
+	Shape *sphere;
+  Shape *treeShape;
+	Shape *barnShape;
 
 	Texture *defaultTex;
 
@@ -167,9 +173,9 @@ public:
 	Ground *ground;
 	GOMothership *mothership;
 	GOBarn *barn;
-    
+
 	vector<GOTree> treeObjs;
-	vector<GOBorder> btreeObjs;
+	vector<GOTree> btreeObjs;
 	vector<GOCow> cowObjs;
 	vector<GOHaybale> hayObjs;
 
@@ -287,7 +293,7 @@ public:
 	}
 
 	//init map from editor
-	void initMap(vector<GOCow> *cows, vector<GOBorder> *btrees, vector<GOTree> *trees, vector<GOHaybale> *hay) {
+	void initMap(vector<GOCow> *cows, vector<GOTree> *btrees, vector<GOTree> *trees, vector<GOHaybale> *hay) {
 		int scanned = 0;
 		int bpp;
 		unsigned char* rgb = stbi_load("../resources/Maps/Map2.png", &Mwidth, &Mheight, &bpp, 3);
@@ -321,10 +327,10 @@ public:
 			float zRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 
 			if (strcmp(current, "bordertree") == 0) {
-				btrees->push_back(GOBorder(treeShape, defaultTex, 1, vec3(-x + xRand, 3 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
+				btrees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
 			}
 			else if (strcmp(current, "innertree") == 0) {
-				trees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 3, z + zRand), vec3(0, 180 * xRand, 0), vec3(5.f + zRand)));
+				trees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0, z + zRand), vec3(0, 180 * xRand, 0), vec3(5.f + zRand)));
 			}
 			else if (strcmp(current, "cow") == 0) {
 				numCows++;
@@ -335,13 +341,13 @@ public:
 				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
 			}
 			else if (strcmp(current, "player") == 0) {
-				player->setPos(vec3(-x, 1.5, z));
+				player->setPos(vec3(-x, 10, z)); //boing
 			}
 			else if (strcmp(current, "mothership") == 0) {
 				mothership->setPos(vec3(-x, -0.5, z));
 			}
 			else if (strcmp(current, "barn") == 0) {
-				barn->setPos(vec3(-x, 2, z));
+				barn->setPos(vec3(-x, 0, z));
 			}
 
 			/*if (strcmp(current, "empty") != 0) {
@@ -356,28 +362,37 @@ public:
 			counter++;
 			scanned++;
 		}
+
+
+		//quadtree buffer border
+		float border = 20; //TODO 50
+
+		cout << "Quadtree bounds: x: " << -Mwidth - border << " -> " << 0 + border << " y: " << 0 - border << " -> " << Mheight + border << endl;
+
+		//quadTree = make_shared<QuadTree>(vec2(-2000, -2000), vec2(2000, 2000));
+		quadTree = make_shared<QuadTree>(vec2(-Mwidth - border, 0 - border), vec2(0 + border, Mheight + border));
 	}
-    
-    //Gives the obj based on the RGB value
-    char* RGBtoOBJ(int R, int G, int B) {
-        //border trees
-        if (R == 0 && G == 150 && B == 0) { return "bordertree"; }
+
+  //Gives the obj based on the RGB value
+  char* RGBtoOBJ(int R, int G, int B) {
+    //border trees
+    if (R == 0 && G == 150 && B == 0) { return "bordertree"; }
 		//inner trees
 		else if (R == 0 && G == 255 && B == 0) { return "innertree"; }
-        //cow
-        else if (R == 0 && G == 0 && B == 0) { return "cow"; }
+    //cow
+    else if (R == 0 && G == 0 && B == 0) { return "cow"; }
 		//hay bales
 		else if (R == 255 && G == 150 && B == 0) { return "haybale"; }
 		//barn
 		else if (R == 150 && G == 50 && B == 0) { return "barn"; }
-        //player start position
-        else if (R == 0 && G == 0 && B == 255) { return "player"; }
-        //mothership
-        else if (R == 255 && G == 0 && B == 0) { return "mothership"; }
-
+    //player start position
+    else if (R == 0 && G == 0 && B == 255) { return "player"; }
+    //mothership
+    else if (R == 255 && G == 0 && B == 0) { return "mothership"; }
+		//none
 		else { return "empty"; }
-    }
-    
+  }
+
 	// initializes skybox program
 	void initSkyBox(const std::string& resourceDirectory) {
 		//init the skybox program
@@ -657,6 +672,11 @@ public:
 		barnShape->resize();
 		barnShape->init();
 
+		groundShape = new Shape();
+		groundShape->loadMesh(resourceDirectory + "/Models/ground.obj");
+		groundShape->resize();
+		groundShape->init();
+
 		cube = new Shape();
 		cube->loadMesh(resourceDirectory + "/Models/cube.obj");
 		cube->resize();
@@ -683,12 +703,31 @@ public:
 		playerShape->init();
 
 		//TODO replace below defaultTex with textures
-		player = new GamePlayer(playerShape, defaultTex, playerPos, vec3(0.0, -2.0, 0.0), vec3(0.0, 0.0, 0.0));
-		mothership = new GOMothership(msShape, defaultTex, 10, MSPos, vec3(0, 0, 0), vec3(10, 10, 10), numCows, numHay);
-		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5, 5, 5));
+		player = new GamePlayer(playerShape, defaultTex, vec3(0.0), vec3(0.0, -2.0, 0.0), vec3(1.0));
+		mothership = new GOMothership(sphere, defaultTex, 10, vec3(0.0), vec3(0.0), vec3(10.0), numCows, numHay);
+		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5.0));
 		initMap(&cowObjs, &btreeObjs, &treeObjs, &hayObjs);
-		ground = new Ground(cube, defaultTex, (float)Mwidth, (float)Mheight);
+		ground = new Ground(groundShape, defaultTex, (float)Mwidth, (float)Mheight);
 		initQuad(); //quad for VBO
+
+		//cout << "MS x: " << mothership->getPos().x << " y: " << mothership->getPos().y << " z: " << mothership->getPos().z << endl; //DEBUG
+		//cout << "BARN x: " << barn->getPos().x << " y: " << barn->getPos().y << " z: " << barn->getPos().z << endl; //DEBUG
+
+		quadTree->addObject(player);
+		//quadTree->addObject(mothership); TODO
+		//quadTree->addObject(barn); TODO
+		for(vector<GOCow>::iterator cur = cowObjs.begin(); cur != cowObjs.end(); cur++) {
+			quadTree->addObject(&*cur);
+	  }
+		for(vector<GOTree>::iterator cur = btreeObjs.begin(); cur != btreeObjs.end(); cur++) {
+			quadTree->addObject(&*cur);
+	  }
+		for(vector<GOTree>::iterator cur = treeObjs.begin(); cur != treeObjs.end(); cur++) {
+			quadTree->addObject(&*cur);
+	  }
+		for(vector<GOHaybale>::iterator cur = hayObjs.begin(); cur != hayObjs.end(); cur++) {
+			quadTree->addObject(&*cur);
+	  }
 	}
 
 
@@ -745,36 +784,16 @@ public:
 	//main update loop, called once per frame
 	//TODO maybe pass a world state and handle collisions inside objs?
 	void update(double timeScale) {
-		player->update(wasdIsDown, arrowIsDown, timeScale, Mwidth, Mheight);
+		player->doControls(wasdIsDown, arrowIsDown);
 
-		vector<GOCow>::iterator cur;
-		for (cur = cowObjs.begin(); cur != cowObjs.end(); cur++) {
-			//TODO mothership collision
-			if (!cur->isCollected()) {
-				if (cur->isColliding(mothership)) {
-					mothership->collect(&*cur);
-				}
-				else if (cur->isColliding(player)) {
-					cur->collide(player);
-					player->collide(&*cur);
-				}
-				cur->update(timeScale, Mwidth, Mheight);
-			}
-		}
+		quadTree->update(timeScale);
 
-		vector<GOHaybale>::iterator curHay;
-		for (curHay = hayObjs.begin(); curHay != hayObjs.end(); curHay++) {
-			if (!curHay->isCollected()) {
-				if (curHay->isColliding(mothership)) {
-					mothership->collect(&*curHay);
-				}
-				if (curHay->isColliding(player)) {
-					curHay->collide(player);
-					player->collide(&*curHay);
-				}
-				curHay->update(timeScale, Mwidth, Mheight);
-			}
-		}
+		player->positionCamera();
+
+		//TODO mothership->collide(cow/bale) should collect
+		//TODO cows->collide(mothership) should stop them moving
+		// or delete them
+		//TODO see above but for haybales
 	}
 
 	void updateParticles()
@@ -842,14 +861,6 @@ public:
   	return ortho;
   }
 
-/* V - camera view */
-  void setView_OLD(shared_ptr<Program> curProg) {
-		vec3 camPos = player->getCamPos();
-		glUniform3f(shadowProg->getUniform("camPos"), camPos.x, camPos.y, camPos.z);
-  	mat4 View = glm::lookAt(camPos, player->getPos(), vec3(0, 1, 0));
-  	glUniformMatrix4fv(curProg->getUniform("V"), 1, GL_FALSE, value_ptr(View));
-  }
-
 /* V - camera view without translation */
 	void setSkyBoxView(shared_ptr<Program> curProg) {
 		mat4 View = mat4(1.f);
@@ -868,12 +879,6 @@ public:
 	void drawScene(shared_ptr<Program> curProg, GLint shadowTexture) {
 		shared_ptr<MatrixStack> Model = make_shared<MatrixStack>(); //TODO the sharedptr is probably unnecessary
 
-		vector<GOBorder>::iterator btreeI;
-		vector<GOTree>::iterator treeI;
-		vector<GOCow>::iterator cowI;
-		vector<GOHaybale>::iterator hayI;
-		vector<Shape*>::iterator cowanimI;
-
 		if (shadowTexture) {
 			//mothership
 			//if(!ViewFrustCull(mothership->getPos(), mothership->getRadius(), CULL)) {
@@ -890,28 +895,28 @@ public:
 			ground->draw(curProg, Model);
 
 			//border trees
-			for(btreeI = btreeObjs.begin(); btreeI != btreeObjs.end(); btreeI++) {
+			for(vector<GOTree>::iterator btreeI = btreeObjs.begin(); btreeI != btreeObjs.end(); btreeI++) {
 				if(!ViewFrustCull(btreeI->getPos(), btreeI->getRadius(), CULL)) {
 					btreeI->getTexture()->bind(shadowTexture);
 			  	btreeI->draw(curProg, Model);
 				}
 			}
 			//inner trees
-			for (treeI = treeObjs.begin(); treeI != treeObjs.end(); treeI++) {
+			for (vector<GOTree>::iterator treeI = treeObjs.begin(); treeI != treeObjs.end(); treeI++) {
 				if (!ViewFrustCull(treeI->getPos(), treeI->getRadius(), CULL)) {
 					treeI->getTexture()->bind(shadowTexture);
 					treeI->draw(curProg, Model);
 				}
 			}
 			//cows
-			for(cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
+			for(vector<GOCow>::iterator cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
 				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
 					cowI->getTexture()->bind(shadowTexture);
 					cowI->draw(curProg, Model);
 				}
 			}
 			//hay
-			for (hayI = hayObjs.begin(); hayI != hayObjs.end(); hayI++) {
+			for (vector<GOHaybale>::iterator hayI = hayObjs.begin(); hayI != hayObjs.end(); hayI++) {
 				if (!ViewFrustCull(hayI->getPos(), hayI->getRadius(), CULL)) {
 					hayI->getTexture()->bind(shadowTexture);
 					hayI->draw(curProg, Model);
@@ -934,25 +939,25 @@ public:
 			ground->draw(curProg, Model);
 
 			//bordertrees
-			for(btreeI = btreeObjs.begin(); btreeI != btreeObjs.end(); btreeI++) {
+			for(vector<GOTree>::iterator btreeI = btreeObjs.begin(); btreeI != btreeObjs.end(); btreeI++) {
 				if(!ViewFrustCull(btreeI->getPos(), btreeI->getRadius(), CULL)) {
 					btreeI->draw(curProg, Model);
 				}
 			}
 			//inner trees
-			for (treeI = treeObjs.begin(); treeI != treeObjs.end(); treeI++) {
+			for (vector<GOTree>::iterator treeI = treeObjs.begin(); treeI != treeObjs.end(); treeI++) {
 				if (!ViewFrustCull(treeI->getPos(), treeI->getRadius(), CULL)) {
 					treeI->draw(curProg, Model);
 				}
 			}
 			//cows
-			for(cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
+			for(vector<GOCow>::iterator cowI = cowObjs.begin(); cowI != cowObjs.end(); cowI++) {
 				if(!ViewFrustCull(cowI->getPos(), cowI->getRadius(), CULL)) {
 			  	cowI->draw(curProg, Model);
 				}
 			}
 			//hay
-			for (hayI = hayObjs.begin(); hayI != hayObjs.end(); hayI++) {
+			for (vector<GOHaybale>::iterator hayI = hayObjs.begin(); hayI != hayObjs.end(); hayI++) {
 				if (!ViewFrustCull(hayI->getPos(), hayI->getRadius(), CULL)) {
 					hayI->draw(curProg, Model);
 				}
@@ -962,7 +967,6 @@ public:
 		}
 	}
 
-	//TODO you deleted this code, dumbass. Put it back.
 	void renderSkyBox() {
 		int width, height;
 		glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -1140,7 +1144,7 @@ int main(int argc, char **argv) {
 	//gui stuff
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	
+
 	ImGui_ImplGlfw_InitForOpenGL(windowManager->getHandle(), true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 	ImGui::StyleColorsDark();
