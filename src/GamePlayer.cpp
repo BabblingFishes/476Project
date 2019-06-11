@@ -1,6 +1,8 @@
 #include "GamePlayer.h"
 #include "Particle.h"
 
+#include <algorithm>
+
 #define MAP_WIDTH 200
 #define MAP_LENGTH 75
 #define EPSILON 0.01

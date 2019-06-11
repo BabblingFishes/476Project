@@ -15,7 +15,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
-#include <irrKlang.h>
+#include <irrklang/irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
@@ -43,12 +43,12 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "QuadTree.h"
 
 //gui
-#include <imgui.h>
-#include <imgui_impl_opengl3.h>
-#include <imgui_impl_glfw.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <imgui/imgui_impl_glfw.h>
 
 //sounds
-#include <irrKlang.h>
+#include <irrklang/irrKlang.h>
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -69,7 +69,10 @@ class Application : public EventCallbacks {
 public:
 	//ui stuff
 	bool show_UI = true;
-	float timer = 0;
+	int timer = 0;
+	bool gameEnd = false;
+	unsigned int start;
+	int endpoints = 0;
 
 	WindowManager * windowManager = nullptr;
 
@@ -277,6 +280,8 @@ public:
 	void init(const std::string& resourceDirectory) {
 		//QUESTION what is this actually for? is it checking for graphics driver compatibility?
 		GLSL::checkVersion();
+
+		start = clock();
 
 		// Set background color (pink for debug, black otherwise)
 		if (DEBUG_MODE) {
@@ -1154,8 +1159,9 @@ public:
 		ImGui::NewFrame();
 		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
 		window_flags |= ImGuiWindowFlags_NoBackground;
+		int timer = 0;
 
-		if (show_UI)
+		if (!gameEnd)
 		{
 			ImGui::Begin("Holy Cow", NULL, window_flags);
 			ImGui::SetWindowFontScale(2.0f);
@@ -1164,15 +1170,32 @@ public:
 
 			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
 			(ImGui::GetFontSize() * 100.0f);
-			ImGui::Text("Hay Collected: %d", collHay);
+			//ImGui::Text("Hay Collected: %d", collHay);
 
-			int cowpoints = collCows * 10;
-			int haypoints = collHay * 7;
-			int totalpoints = cowpoints - haypoints;
-			ImGui::TextColored(ImVec4(1.0, 0.5, 0.5, 1.0), "Points earned: %d", totalpoints);
+			timer += ((clock() - start) / 1000);
+
+			int cowpoints = collCows * 100;
+			int haypoints = collHay * 70;
+			int totalpoints = (cowpoints - haypoints) * 1/timer;
+			ImGui::Text("Elapsed time: %d", timer);
+
+			//ImGui::TextColored(ImVec4(1.0, 0.5, 0.5, 1.0), "Points earned: %d", totalpoints);
 			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::End();
+
+			if (collCows == numCows) {
+				endpoints = totalpoints;
+				gameEnd = true;
+			}
 		}
+		else
+		{
+			ImGui::Begin("WIN", NULL, window_flags);
+			ImGui::SetWindowFontScale(4.0f);
+			ImGui::TextColored(ImVec4(0.0, 1.0, 0.3, 1.0), "You won with %d points!", endpoints);
+		}
+
+		ImGui::End();
+
 
 		ImGui::Render();
 		int display_w, display_h;
