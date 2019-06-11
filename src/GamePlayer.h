@@ -26,12 +26,17 @@ using namespace glm;
 class GamePlayer : public GameObject {
 private:
   float shipRadius;
+  float beamStrength;
+
   float camPhi;
   float camTheta;
   float camZoom;
   vec3 camPosition;
 
-  void positionCamera();
+  bool *wasdIsDown;
+  bool *arrowIsDown;
+
+  void shipCollide(GameObject *other);
 
 public:
 
@@ -43,14 +48,14 @@ public:
   float getCamTheta();
 
   bool borderCollision(vec3 nextPos);
-    
-  void update(bool *wasdIsDown, bool *arrowIsDown, float timeScale, int Mwidth, int Mheight);
+
+  void doControls(bool *wasdIsDown, bool *arrowIsDown);
+  bool update(float timeScale);
+  void positionCamera();
 
   void draw(std::shared_ptr<Program> prog, std::shared_ptr<MatrixStack> Model);
 
-  void collide(GOCow *cow);
-
-  void collide(GOHaybale *hay);
+  void collide(GameObject *other);
 
   void beamIn(GameObject *other);
 };

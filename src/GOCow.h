@@ -4,6 +4,7 @@
 
 #include <glad/glad.h>
 #include <iostream>
+#include <irrKlang.h>
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -11,6 +12,7 @@
 #include "Texture.h"
 #include "Material.h"
 #include "GameObject.h"
+#include "GOMothership.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -34,10 +36,10 @@ public:
 
   bool isCollected();
 
-  void update(float timeScale, int Mwidth, int Mheight);
+  bool update(float timeScale);
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
-  void collect();
+  void collide(GameObject *other);
 };
 
 #endif

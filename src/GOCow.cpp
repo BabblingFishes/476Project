@@ -3,8 +3,6 @@
 #define PI 3.14159
 #define NUMOBJS 11
 
-#include <irrklang/irrKlang.h>
-
 using namespace std;
 using namespace glm;
 using namespace irrklang;
@@ -13,7 +11,8 @@ using namespace irrklang;
 GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
   this->shape = shape;
   this->texture = texture;
-  radius = 0.5;
+  //radius = 0.5;
+  //height = 0.5;
   mass = 1;
 
   material = new Material(
@@ -22,14 +21,23 @@ GOCow::GOCow(Shape *shape, Texture *texture, int x, int z) {
     vec3(0.05, 0.04, 0.04), //matSpec
     .005); //shine
 
-  position = vec3(x, -1, z);
+  position = vec3(x, 0, z);
 
   //pick a random rotation
   rotation = vec3(0 , (((float)rand() / (RAND_MAX)) * 2 * PI), 0);
 
   scale = vec3(0.85);
   velocity = vec3(0.0);
+
+  physEnabled = true;
+  mass = 1;
+  bounce = 0.75;
+  netForce = vec3(0.0f);
+
+  computeDimensions();
+
   collected = false;
+  idName = GOid::Cow;
 }
 
 // specific constructor
@@ -37,35 +45,47 @@ GOCow::GOCow(Shape *shape, Texture *texture, Material *material, float radius, v
   this->shape = shape;
   this->texture = texture;
   this->material = material;
-  this->radius = radius;
+  //this->radius = radius;
   this->position = position;
   this->rotation = rotation;
   this->scale = scale;
   this->velocity = velocity;
-  mass = 1; //TODO
+
+  physEnabled = true;
+  mass = 1;
+  bounce = 0.75;
+  netForce = vec3(0.0f);
+
+  computeDimensions();
+
   collected = false;
+  idName = GOid::Cow;
 }
 
 bool GOCow::isCollected()   {   return collected;   }
 
 
-void GOCow::update(float timeScale, int Mwidth, int Mheight) {
+
+bool GOCow::update(float timeScale) {
+  vec3 oldPos = position;
+
   float moveMagn = 0.0001f; //walkin' power
   if(position.y == 0) { //if on the ground
     //move in the direction of the rotation
     netForce += vec3(sin(rotation.y), 0, cos(rotation.y)) * vec3(moveMagn);
   }
-  move(timeScale, Mwidth, Mheight);
+
+  move(timeScale);
+  return position != oldPos;
 }
 
 void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->pushMatrix();
-    Model->translate(position);
+    Model->translate(position + vec3(0, height / 2, 0));
     Model->rotate(rotation.x, vec3(1, 0, 0));
     Model->rotate(rotation.y, vec3(0, 1, 0));
     Model->rotate(rotation.z, vec3(0, 0, 1));
     Model->scale(scale);
-	Model->translate(vec3(0, -0.65, 0)); //TODO: remove this with new plane
     if(collected) { //DEBUG
       glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
       glUniform3f(prog->getUniform("matDif"), 0.0, 0.16, 0.9);
@@ -80,11 +100,23 @@ void GOCow::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
   Model->popMatrix();
 }
 
-
-void GOCow::collect() {
-	ISoundEngine* engine = createIrrKlangDevice();
-	if (!engine)
-		return;
-	engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
-  collected = true;
+void GOCow::collide(GameObject *other) {
+  switch(other->getID()) {
+    case GOid::Haybale:
+    case GOid::Cow:
+      bounceOff(other);
+      break;
+    case GOid::Mothership:
+      if(!collected) {
+        collected = true;
+        physEnabled = false;
+        ISoundEngine* engine = createIrrKlangDevice();
+        if (!engine)
+          return;
+        engine->play2D("../resources/Animated Cow/Sound/SFX/Moo.ogg");
+      }
+      break;
+    default:
+      break;
+  }
 }

@@ -18,4 +18,14 @@ GOBarn::GOBarn(Shape* shape, Texture* texture, vec3 position, vec3 rotation, vec
 	this->position = position;
 	this->rotation = rotation;
 	this->scale = scale;
+	radius = 0; //TODO
+
+	physEnabled = false;
+  mass = 1;
+  bounce = 0.75;
+  netForce = vec3(0.0f);
+
+	computeDimensions();
+
+	idName = GOid::Barn;
 }
