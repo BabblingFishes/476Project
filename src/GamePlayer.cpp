@@ -10,55 +10,72 @@ GamePlayer::GamePlayer(Shape *shape, Texture *texture, vec3 position, vec3 rotat
   this->shape = shape;
   this->texture = texture;
   this->material = material;
-  radius = 10; //this is the beam radius
-  mass = 1;
-  this->position = position + vec3(0, 1, 0); //this baby flies
+  this->position = position; //this baby flies
   this->rotation = rotation;
   this->velocity = velocity;
   this->scale = scale;
   velocity = vec3(0);
-  netForce = vec3(0);
+  beamStrength = 0.02; //TODO adjust as necessary
+
+  physEnabled = true;
+  mass = 10; //TODO adjust as necessary
+  bounce = 0.75;
+  netForce = vec3(0.0f);
 
   material = new Material(
 	vec3(0.1, 0.13, 0.2), //amb
 	vec3(0.337, 0.49, 0.275), //dif
-	vec3(0.14, 0.2, 0.8), //matSpec
+	vec3(0.14, 0.2, 0.8), //spec
 	25); //shine
 
-  shipRadius = 1;
+  computeDimensions();
+  //save the model's radius as the ship radius
+  shipRadius = radius;
+  //larger base radius for gravitation beam
+  radius = 10;
+
   camPhi = rotation.x;
   camTheta = rotation.y;
-  camZoom = 10;
+  camZoom = 10; //10
   positionCamera();
+
+  idName = GOid::Player;
 }
 
 
 float GamePlayer::getCamPhi() { return camPhi; }
 float GamePlayer::getCamTheta() { return camTheta; }
+vec3 GamePlayer::getCamPos() { return camPosition; }
+
 
 void GamePlayer::positionCamera() {
   vec3 cameraForward = vec3(cos(camPhi) * sin(camTheta),
                             -sin(camPhi),
                             cos(camPhi) * cos(camTheta));
-  camPosition = position - (cameraForward * camZoom);
+  camPosition = position + vec3(0, height / 2, 0) - (cameraForward * camZoom);
 }
-vec3 GamePlayer::getCamPos() { return camPosition; }
+
 
 void GamePlayer::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model){
   //player model
   Model->pushMatrix();
-  Model->translate(position);
-  Model->rotate(rotation.x, vec3(1, 0, 0));
-  Model->rotate(rotation.z, vec3(0, 0, 1));
-  Model->rotate(rotation.y, vec3(0, 1, 0));
-   // offset for wobble
-  Model->rotate(0.2, vec3(0, 0, 1));
-  Model->translate(vec3(0.3, 0, 0));
-  //material
-  material->draw(prog);
-  //draw
-  glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
-  shape->draw(prog);
+    Model->translate(position + vec3(0, height / 2, 0));
+    Model->rotate(rotation.x, vec3(1, 0, 0));
+    Model->rotate(rotation.z, vec3(0, 0, 1));
+    Model->rotate(rotation.y, vec3(0, 1, 0));
+     // offset for wobble
+    Model->rotate(0.2, vec3(0, 0, 1));
+    Model->translate(vec3(0.3, 0, 0));
+    //material
+    if (material) {
+      material->draw(prog);
+    }
+    else {
+      cerr << "Object missing material!" << endl;
+    }
+    //draw
+    glUniformMatrix4fv(prog->getUniform("M"), 1, GL_FALSE, value_ptr(Model->topMatrix()));
+    shape->draw(prog);
   Model->popMatrix();
 }
 
@@ -73,8 +90,7 @@ void GamePlayer::doControls(bool *wasdIsDown, bool *arrowIsDown) {
 
 bool GamePlayer::update(float timeScale) {
   //TODO after implementing real-time, make these values constants
-  float moveMagn = 0.01f; //force from player controls
-  //float mass = 1; // player mass
+  float moveMagn = 0.1f; //force from player controls
   float rotSpeed = 0.1f * timeScale; // UFO spin speed
 
   //TODO drift camera too? or is that bad for motion sickness
@@ -84,9 +100,9 @@ bool GamePlayer::update(float timeScale) {
   rotation += vec3(0, rotSpeed, 0);
 
   // camera rotation
-  if (arrowIsDown[0]) camPhi = max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
+  if (arrowIsDown[0]) camPhi = std::max(camPhi - cameraSpeed, 0.0f); // no clipping thru the floor
   if (arrowIsDown[1]) camTheta -= cameraSpeed;
-  if (arrowIsDown[2]) camPhi = min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
+  if (arrowIsDown[2]) camPhi = std::min(camPhi + cameraSpeed, 1.56f); // no flipping the camera
   if (arrowIsDown[3]) camTheta += cameraSpeed;
 
   //player orientation
@@ -99,47 +115,47 @@ bool GamePlayer::update(float timeScale) {
   vec3 xForce = playerLeft * moveMagn;
 
   //player controls
-    if (wasdIsDown[0]) {
-            netForce += zForce;
-    }
-    if (wasdIsDown[1]) {
-            netForce -= xForce;
-    }
-    if (wasdIsDown[2]) {
-            netForce -= zForce;
-    }
-    if (wasdIsDown[3]) {
-            netForce += xForce;
-    }
+    if (wasdIsDown[0]) netForce += zForce;
+    if (wasdIsDown[1]) netForce -= xForce;
+    if (wasdIsDown[2]) netForce -= zForce;
+    if (wasdIsDown[3]) netForce += xForce;
 
-  move(timeScale, Mwidth, Mheight);
+  move(timeScale);
 
   // place the camera,pointed at the player
-  positionCamera();
   return true;
 }
 
-void GamePlayer::collide(GOCow *cow) {
-    if(!cow->isCollected()) {
-        beamIn(cow);
-    }
-}
-
-void GamePlayer::collide(GOHaybale* hay) {
-	if (!hay->isCollected()) {
-		beamIn(hay);
-	}
+void GamePlayer::collide(GameObject *other) {
+  switch(other->getID()) {
+    case GOid::Haybale:
+    case GOid::Cow:
+      beamIn(other);
+      break;
+    case GOid::Tree:
+      shipCollide(other);
+      break;
+  }
 }
 
 //moves an object towards the gravitation beam
 void GamePlayer::beamIn(GameObject *other) {
-  float beamStrength = 0.01;
-
-  vec3 dir = position - other->getPos();
-  //TODO str / distance
+  //pull towards top of the ship
+  vec3 dir = position + vec3(0, height, 0) - other->getPos();
   float dist = length(dir);
-  vec3 force = normalize(dir) * (float)(beamStrength / max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
+  vec3 force = normalize(dir) * (float)(beamStrength / std::max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
   other->addForce(force);
+}
 
-  //this...is very broken
+//cheap hack to do ship collision with the correct radius
+//note this is currently ONLY for use with trees...
+void GamePlayer::shipCollide(GameObject *other) {
+  float tempRadius = radius;
+  radius = shipRadius;
+
+  if(isColliding(other)) {
+    bounceOff(other);
+  }
+
+  radius = tempRadius;
 }

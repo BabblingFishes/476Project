@@ -10,8 +10,7 @@
 
 class Program;
 
-class Shape
-{
+class Shape {
 
 public:
 
@@ -19,8 +18,17 @@ public:
 	void init();
 	void resize();
 	void draw(const std::shared_ptr<Program> prog) const;
+	float getWidth();
+	float getHeight();
+	float getLength();
+
+	// NOTE: width/height/length (x/y/z) are declared DURING RESIZE()
+	// IF YOU DO NOT RESIZE IT IS NOT MEASURED
 
 private:
+	float width;
+	float height;
+	float length;
 
 	std::vector<unsigned int> eleBuf;
 	std::vector<float> posBuf;
@@ -32,7 +40,6 @@ private:
 	unsigned int norBufID = 0;
 	unsigned int texBufID = 0;
 	unsigned int vaoID = 0;
-
 };
 
 #endif // LAB471_SHAPE_H_INCLUDED

@@ -10,7 +10,7 @@ using namespace glm;
 GOHaybale::GOHaybale(Shape* shape, Texture* texture, int x, int z) {
 	this->shape = shape;
 	this->texture = texture;
-	radius = 0.45;
+	//radius = 0.45;
 	mass = 0.5;
 
 	material = new Material(
@@ -26,24 +26,34 @@ GOHaybale::GOHaybale(Shape* shape, Texture* texture, int x, int z) {
 
 	scale = vec3(.75, .45, .45);
 	velocity = vec3(0.0);
+
+	physEnabled = true;
+  mass = 1;
+  bounce = 0.75;
+  netForce = vec3(0.0f);
+
+	computeDimensions();
+
 	collected = false;
+	idName = GOid::Haybale;
 }
 
 
 bool GOHaybale::isCollected() { return collected; }
 
 
-void GOHaybale::update(float timeScale, int Mwidth, int Mheight) {
-	move(timeScale, Mwidth, Mheight);
+bool GOHaybale::update(float timeScale) {
+	vec3 oldPos = position;
+	move(timeScale);
+	return position != oldPos;
 }
 
 void GOHaybale::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
 	Model->pushMatrix();
-	Model->translate(position);
+	Model->translate(position + vec3(0, height / 2, 0));
 	Model->rotate(rotation.x, vec3(1, 0, 0));
 	Model->rotate(rotation.y, vec3(0, 1, 0));
 	Model->rotate(rotation.z, vec3(0, 0, 1));
-	Model->translate(vec3(0, -0.55, 0)); //TODO: remove this with new plane
 	Model->scale(scale);
 	if (collected) { //DEBUG
 		glUniform3f(prog->getUniform("matAmb"), 0.02, 0.04, 0.2);
@@ -59,7 +69,23 @@ void GOHaybale::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
 	Model->popMatrix();
 }
 
+//TODO TEST THIS
+void GOHaybale::collide(GOMothership *MS) {
+	cout << "Surprise, motherfucker" << endl; //DEBUG
+}
 
-void GOHaybale::collect() {
-	collected = true;
+
+void GOHaybale::collide(GameObject *other) {
+	switch(other->getID()) {
+    case GOid::Haybale:
+    case GOid::Cow:
+      bounceOff(other);
+      break;
+    case GOid::Mothership:
+      if(!collected) {
+        collected = true;
+        physEnabled = false;
+      }
+      break;
+  }
 }

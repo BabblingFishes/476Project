@@ -1,10 +1,11 @@
 #include "GOMothership.h"
+#include "GOCow.h"
+#include "GOHaybale.h"
 
 #define PI 3.14159
 
 using namespace std;
 using namespace glm;
-
 
 // constructor
 GOMothership::GOMothership(Shape *shape, Texture *texture, float radius, vec3 position, vec3 rotation, vec3 scale , int maxCows, int maxHay) {
@@ -17,16 +18,23 @@ GOMothership::GOMothership(Shape *shape, Texture *texture, float radius, vec3 po
 	  vec3(0.14, 0.2, 0.8), //matSpec
 	  .01); //shine
 
-  this->radius = radius;
   this->position = position;
   this->rotation = rotation;
   this->scale = scale;
-  mass = 0;
   cowsCollected = 0;
   this->maxCows = maxCows;
 
   hayCollected = 0;
   this->maxHay = maxHay;
+
+  physEnabled = false;
+  mass = 1;
+  bounce = 0.75;
+  netForce = vec3(0.0f);
+
+  computeDimensions();
+
+  idName = GOid::Mothership;
 }
 
 int GOMothership::getCollectedCows() {
@@ -37,9 +45,8 @@ int GOMothership::getCollectedHay() {
 	return hayCollected;
 }
 
-void GOMothership::collect(GOCow* cow) {
+void GOMothership::collide(GOCow* cow) {
 	if (!(cow->isCollected())) {
-		cow->collect();
 		cowsCollected++;
 		if (cowsCollected == maxCows) { //TODO pass max in constructor
 			cout << "Mission Accomplished! You've colleced all of the cows!" << endl;
@@ -50,15 +57,14 @@ void GOMothership::collect(GOCow* cow) {
 	}
 }
 
-  void GOMothership::collect(GOHaybale * hay) {
-	  if (!(hay->isCollected())) {
-		  hay->collect();
-		  hayCollected++;
-		  if (hayCollected == maxHay) { //TODO pass max in constructor
-			  cout << "Oh No! You've colleced all of the hay!" << endl;
-		  }
-		  else {
-			  cout << "Number of Hay Collected:" << hayCollected << endl;
-		  }
+void GOMothership::collide(GOHaybale * hay) {
+  if (!(hay->isCollected())) {
+	  hayCollected++;
+	  if (hayCollected == maxHay) { //TODO pass max in constructor
+		  cout << "Oh No! You've colleced all of the hay!" << endl;
+	  }
+	  else {
+		  cout << "Number of Hay Collected:" << hayCollected << endl;
 	  }
   }
+}

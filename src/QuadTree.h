@@ -8,6 +8,7 @@
 #include <list>
 #include <queue>
 #include "GameObject.h"
+#include "GOid.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
@@ -74,6 +75,8 @@ public:
   bool hasParent();
   bool hasChildren();
   shared_ptr<QuadTree> getParent();
+
+  void printTree();
 };
 
 #endif

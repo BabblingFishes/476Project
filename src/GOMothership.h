@@ -11,8 +11,9 @@
 #include "Texture.h"
 #include "Material.h"
 #include "GameObject.h"
-#include "GOCow.h"
-#include "GOHaybale.h"
+
+class GOCow;
+class GOHaybale;
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -36,9 +37,9 @@ public:
   int getCollectedCows();
   int getCollectedHay();
 
-  void collect(GOCow *cow);
-
-  void collect(GOHaybale *hay);
+  //TODO
+  void collide(GOCow *cow);
+  void collide(GOHaybale *hay);
 };
 
 #endif
