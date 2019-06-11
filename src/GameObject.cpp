@@ -1,8 +1,8 @@
 #include "GameObject.h"
 #include "GOid.h"
 
-#define MAP_WIDTH 120 //TODO remove
-#define MAP_LENGTH 162 //TODO remove
+#define MAP_WIDTH 200 //TODO remove
+#define MAP_LENGTH 75 //TODO remove
 #define EPSILON 0.01
 
 using namespace std;

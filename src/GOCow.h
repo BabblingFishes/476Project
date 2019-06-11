@@ -16,7 +16,6 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <irrKlang/irrKlang.h>
 
 using namespace std;
 using namespace glm;
@@ -45,7 +44,7 @@ public:
 
   void walk();
   bool update(float timeScale);
-  
+
   void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
   void collide(GameObject *other);

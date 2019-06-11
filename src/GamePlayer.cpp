@@ -1,10 +1,9 @@
 #include "GamePlayer.h"
 #include "Particle.h"
 
-#define MAP_WIDTH 120
-#define MAP_LENGTH 162
-
-#include <irrKlang/irrKlang.h>
+#define MAP_WIDTH 200
+#define MAP_LENGTH 75
+#define EPSILON 0.01
 
 using namespace std;
 using namespace glm;
@@ -134,7 +133,7 @@ bool GamePlayer::update(float timeScale) {
     if (wasdIsDown[2]) netForce -= zForce;
     if (wasdIsDown[3]) netForce += xForce;
 
-  movePlayer(timeScale, Mwidth, Mheight);
+  movePlayer(timeScale, MAP_WIDTH, MAP_LENGTH);
 
   return true;
 }
@@ -169,12 +168,6 @@ void GamePlayer::movePlayer(float timeScale, int Mwidth, int Mheight) {
 
 	position += velocity;
   netForce = vec3(0);
-}
-
-void GamePlayer::collide(GOCow *cow) {
-    if(!cow->isCollected()) {
-        beamIn(cow);
-    }
 }
 
 void GamePlayer::collide(GameObject *other) {

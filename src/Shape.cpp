@@ -202,4 +202,4 @@ void Shape::draw(const shared_ptr<Program> prog) const
 
 float Shape::getHeight() { return height; }
 float Shape::getWidth() { return width; }
-float Shape::getLength() { return width; }
+float Shape::getLength() { return length; }

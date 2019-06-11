@@ -40,7 +40,6 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "GOHaybale.h"
 #include "VFC.h"
 #include "Particle.h"
-=======
 #include "QuadTree.h"
 
 //gui
@@ -601,7 +600,7 @@ public:
 		cowWalk1->resize();
 		cowWalk1->init();
 		cowWalk[0] = cowWalk1;
-		
+
 		cowWalk2 = new Shape();
 		cowWalk2->loadMesh(resourceDirectory + "/Models/CowWalk/step2.obj");
 		cowWalk2->resize();
@@ -704,7 +703,7 @@ public:
 
 		//TODO replace below defaultTex with textures
 		player = new GamePlayer(playerShape, defaultTex, vec3(0.0), vec3(0.0, -2.0, 0.0), vec3(1.0));
-		mothership = new GOMothership(sphere, defaultTex, 10, vec3(0.0), vec3(0.0), vec3(10.0), numCows, numHay);
+		mothership = new GOMothership(msShape, defaultTex, 10, vec3(0.0), vec3(0.0), vec3(10.0), numCows, numHay);
 		barn = new GOBarn(barnShape, defaultTex, vec3(0.0), vec3(0.0), vec3(5.0));
 		initMap(&cowObjs, &btreeObjs, &treeObjs, &hayObjs);
 		ground = new Ground(groundShape, defaultTex, (float)Mwidth, (float)Mheight);
@@ -1037,7 +1036,7 @@ public:
 
 	void renderParticles() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
+
 		auto M = make_shared<MatrixStack>();
 		auto V = make_shared<MatrixStack>();
 
@@ -1088,7 +1087,7 @@ public:
 			ImGui::SetWindowFontScale(2.0f);
 			int collCows = mothership->getCollectedCows();
 			int collHay = mothership->getCollectedHay();
-			
+
 			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
 			(ImGui::GetFontSize() * 100.0f);
 			ImGui::Text("Hay Collected: %d", collHay);

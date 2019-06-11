@@ -4,6 +4,7 @@
 
 #include <glad/glad.h>
 #include <iostream>
+#include <irrKlang.h>
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"
@@ -14,7 +15,6 @@
 #include "GOCow.h"
 #include "GOHaybale.h"
 
-#include <irrKlang/irrklang.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -52,8 +52,6 @@ public:
   float getCamPhi();
   float getCamTheta();
 
-  bool borderCollision(vec3 nextPos);
-    
   bool getSparking();
   void movePlayer(float timeScale, int Mwidth, int Mheight);
 
