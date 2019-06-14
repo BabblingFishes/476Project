@@ -184,8 +184,13 @@ void GamePlayer::collide(GameObject *other) {
 
 //moves an object towards the gravitation beam
 void GamePlayer::beamIn(GameObject *other) {
+
+  //calculate position relative to ship
+  vec3 gravPos = 0.2f * normalize(vec3(sin(rotation.y), 0, cos(rotation.y)));
   //pull towards top of the ship
-  vec3 dir = position + vec3(0, height, 0) - other->getPos();
+  gravPos += position + vec3(0, height, 0);
+
+  vec3 dir = gravPos - other->getPos();
   float dist = length(dir);
   vec3 force = normalize(dir) * (float)(beamStrength / std::max(pow(dist, 2.0), 0.5)); //TODO might divide again by a mass-based beam constant?
   other->addForce(force);

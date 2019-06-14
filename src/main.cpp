@@ -1254,7 +1254,8 @@ int main(int argc, char **argv) {
 	ImGui::StyleColorsDark();
 
 	//background music
-	ISoundEngine* engine;
+	ISoundEngine* engine = createIrrKlangDevice();
+	engine->play2D("../resources/Audio/Goofy.ogg", true);
 
 	float timeScale = 0;
 	// Loop until the user closes the window.

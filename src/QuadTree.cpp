@@ -159,14 +159,12 @@ void QuadTree::buildTree() {
 void QuadTree::updateLife() {
   // unused leaf
   if(myObjs.size() == 0 && hasChildren() == false) { //NOTE the example actually separates these, but that seems unnecessary
-    if(lifespan == -1) {
-      //TODO hey, shouldn't it die when the lifespan < 0 ???
+    if(lifespan == -1) { // -1 is the "reset lifespan" flag
       lifespan = peakLifespan;
     }
     else if(lifespan > 0) {
       lifespan--;
     }
-    //TODO see above
   }
   // used leaf
   else {
