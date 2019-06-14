@@ -69,10 +69,10 @@ void GOHaybale::draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model) {
 	Model->popMatrix();
 }
 
-//TODO TEST THIS
+/*TODO fuck
 void GOHaybale::collide(GOMothership *MS) {
 	cout << "Surprise, motherfucker" << endl; //DEBUG
-}
+} */
 
 
 void GOHaybale::collide(GameObject *other) {

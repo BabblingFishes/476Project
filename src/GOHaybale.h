@@ -34,7 +34,7 @@ public:
 	bool update(float timeScale);
 	void draw(shared_ptr<Program> prog, shared_ptr<MatrixStack> Model);
 
-	void collide(GOMothership *MS); //TODO TEST THIS
+	//void collide(GOMothership *MS);
 	void collide(GameObject *other);
 };
 
