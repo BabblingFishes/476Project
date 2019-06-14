@@ -79,6 +79,7 @@ void GOHaybale::collide(GameObject *other) {
 	switch(other->getID()) {
     case GOid::Haybale:
     case GOid::Cow:
+		case GOid::Tree:
       bounceOff(other);
       break;
     case GOid::Mothership:
@@ -87,5 +88,7 @@ void GOHaybale::collide(GameObject *other) {
         physEnabled = false;
       }
       break;
+		default:
+			break;
   }
 }

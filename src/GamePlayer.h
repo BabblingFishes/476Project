@@ -4,7 +4,7 @@
 
 #include <glad/glad.h>
 #include <iostream>
-#include <irrklang/irrKlang.h>
+#include <irrKlang.h>
 #include "GLSL.h"
 #include "Program.h"
 #include "MatrixStack.h"

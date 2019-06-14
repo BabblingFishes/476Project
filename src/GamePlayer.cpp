@@ -181,6 +181,8 @@ void GamePlayer::collide(GameObject *other) {
     case GOid::Tree:
       shipCollide(other);
       break;
+    default:
+      break;
   }
 }
 

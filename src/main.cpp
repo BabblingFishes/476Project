@@ -15,7 +15,6 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
-#include <irrklang/irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
@@ -41,14 +40,15 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "VFC.h"
 #include "Particle.h"
 #include "QuadTree.h"
+#include "GOid.h"
 
 //gui
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_opengl3.h>
-#include <imgui/imgui_impl_glfw.h>
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_glfw.h>
 
 //sounds
-#include <irrklang/irrKlang.h>
+#include <irrKlang.h>
 
 // value_ptr for glm
 #define GLM_ENABLE_EXPERIMENTAL
@@ -321,7 +321,7 @@ public:
 			int r = int(rgb[i]);
 			int g = int(rgb[i + 1]);
 			int b = int(rgb[i + 2]);
-			int a = int(rgb[i + 3]);
+			//int a = int(rgb[i + 3]);
 			if (counter > Mwidth - 1) {
 				counter = 0;
 				x = 0;
@@ -330,34 +330,34 @@ public:
 
 			//cout << r << " " << g << " " << b << " x:" << x << " z:" << z << endl;
 
-			char* current = RGBtoOBJ(r, g, b);
+			GOid current = RGBtoOBJ(r, g, b);
 			//cout << current << " x:" << x << " z:" << z << endl;
 
 			//random offsets
 			float xRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 			float zRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 
-			if (strcmp(current, "bordertree") == 0) {
+			if (GOid::Border == current) {
 				btrees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
 			}
-			else if (strcmp(current, "innertree") == 0) {
+			else if (GOid::Tree == current) {
 				trees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0, z + zRand), vec3(0, 180 * xRand, 0), vec3(5.f + zRand)));
 			}
-			else if (strcmp(current, "cow") == 0) {
+			else if (GOid::Cow == current) {
 				numCows++;
 				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand, cowWalk));
 			}
-			else if (strcmp(current, "haybale") == 0) {
+			else if (GOid::Haybale == current) {
 				numHay++;
 				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
 			}
-			else if (strcmp(current, "player") == 0) {
+			else if (GOid::Player == current) {
 				player->setPos(vec3(-x, 10, z)); //boing
 			}
-			else if (strcmp(current, "mothership") == 0) {
+			else if (GOid::Mothership == current) {
 				mothership->setPos(vec3(-x, -0.5, z));
 			}
-			else if (strcmp(current, "barn") == 0) {
+			else if (GOid::Barn == current) {
 				barn->setPos(vec3(-x, 0, z));
 			}
 
@@ -385,23 +385,23 @@ public:
 	}
 
   //Gives the obj based on the RGB value
-  char* RGBtoOBJ(int R, int G, int B) {
+  GOid RGBtoOBJ(int R, int G, int B) {
     //border trees
-    if (R == 0 && G == 150 && B == 0) { return "bordertree"; }
+    if (R == 0 && G == 150 && B == 0) { return GOid::Border; }
 		//inner trees
-		else if (R == 0 && G == 255 && B == 0) { return "innertree"; }
+		else if (R == 0 && G == 255 && B == 0) { return GOid::Tree; }
     //cow
-    else if (R == 0 && G == 0 && B == 0) { return "cow"; }
+    else if (R == 0 && G == 0 && B == 0) { return GOid::Cow; }
 		//hay bales
-		else if (R == 255 && G == 150 && B == 0) { return "haybale"; }
+		else if (R == 255 && G == 150 && B == 0) { return GOid::Haybale; }
 		//barn
-		else if (R == 150 && G == 50 && B == 0) { return "barn"; }
+		else if (R == 150 && G == 50 && B == 0) { return GOid::Barn; }
     //player start position
-    else if (R == 0 && G == 0 && B == 255) { return "player"; }
+    else if (R == 0 && G == 0 && B == 255) { return GOid::Player; }
     //mothership
-    else if (R == 255 && G == 0 && B == 0) { return "mothership"; }
+    else if (R == 255 && G == 0 && B == 0) { return GOid::Mothership; }
 		//none
-		else { return "empty"; }
+		else { return GOid::DefaultObject; }
   }
 
 	// initializes skybox program
@@ -445,12 +445,12 @@ public:
 		depthProg->addUniform("matSpec"); //red'd by objects
 		depthProg->addUniform("shine"); //red'd by objects
 
-        
+
         DepthProgDebug = make_shared<Program>();
         DepthProgDebug->setVerbose(true);
         DepthProgDebug->setShaderNames(resourceDirectory + "/depth_vertDebug.glsl", resourceDirectory + "/depth_fragDebug.glsl");
         DepthProgDebug->init();
-        
+
         DepthProgDebug->addUniform("LP");
         DepthProgDebug->addUniform("LV");
         DepthProgDebug->addUniform("M");
@@ -463,7 +463,7 @@ public:
         DepthProgDebug->addUniform("matSpec"); //red'd by objects
         DepthProgDebug->addUniform("shine"); //red'd by objects
 
-        
+
 		shadowProg = make_shared<Program>();
 		shadowProg->setVerbose(true);
 		shadowProg->setShaderNames(resourceDirectory + "/shadow_vert_BP.glsl", resourceDirectory + "/shadow_frag_BP.glsl");
@@ -489,13 +489,13 @@ public:
 		shadowProg->addAttribute("vertTex");
 		shadowProg->addUniform("Texture0");
 		shadowProg->addUniform("shadowDepth");
-        
-        
+
+
         DebugProg = make_shared<Program>();
         DebugProg->setVerbose(true);
         DebugProg->setShaderNames(resourceDirectory + "/pass_vert.glsl", resourceDirectory + "/pass_texfrag.glsl");
         DebugProg->init();
-        
+
         DebugProg->addUniform("texBuf");
         DebugProg->addAttribute("vertPos");
 
@@ -1046,7 +1046,7 @@ public:
 		depthProg->bind();
 		lightP = setOrthoMatrix(depthProg);
 		lightV = setLightView(depthProg, player->getPos() + vec3(0, 27, 0), (player->getPos() + vec3(-0.1, 0, -0.1)) /*player->getPos() - vec3(player->getPos().x + 10, 1, player->getPos().z - 10)*/, vec3(0, 1, 0)); //TODO we could even point this at the nearest cow for funsies
-        
+
         //cout << "LightPos.X: " << (player->getPos() + vec3(0, 30, 0)).x << ", Lookat.X: " << (player->getPos() + vec3(-0.1, 25, -0.1)).x << endl;
         //cout << "LightPos.Y: " << (player->getPos() + vec3(-2 * player->getPos().x, 10, 0)).y << ", Lookat.Y: " << (player->getPos() - vec3(-2 * player->getPos().x, 1, 0)).y << endl;
         //cout << "LightPos.Z: " << (player->getPos() + vec3(-2 * player->getPos().x, 30, 0)).z << ", Lookat.Z: " << (player->getPos() + vec3(-0.1, 25, -0.1)).z << endl;
@@ -1244,9 +1244,6 @@ int main(int argc, char **argv) {
 	ImGui_ImplGlfw_InitForOpenGL(windowManager->getHandle(), true);
 	ImGui_ImplOpenGL3_Init("#version 330");
 	ImGui::StyleColorsDark();
-
-	//background music
-	ISoundEngine* engine;
 
 	float timeScale = 0;
 	// Loop until the user closes the window.
