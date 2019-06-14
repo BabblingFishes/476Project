@@ -379,11 +379,11 @@ void QuadTree::checkCollisions(GameObject *obj, vec3 curPos, vec3 nextPos) {
 bool QuadTree::isColliding(GameObject *obj) {
 
   //DEBUG
-  if(regionMin == vec2(-140, 20) && regionMax == vec2(-60, 60)) {
+  /*if(regionMin == vec2(-140, 20) && regionMax == vec2(-60, 60)) {
     static int X = 0;
-    //cout << X++ << endl;
-    //printTree();
-  }
+    cout << X++ << endl;
+    printTree();
+  }*/
 
   vec3 position = obj->getPos();
   float radius = obj->getRadius();

@@ -120,6 +120,7 @@ void GOCow::collide(GameObject *other) {
   switch(other->getID()) {
     case GOid::Haybale:
     case GOid::Cow:
+    case GOid::Tree:
       bounceOff(other);
       break;
     case GOid::Mothership:

@@ -15,7 +15,6 @@ Winter 2017 - ZJW (Piddington texture write)
 #include <chrono>
 #include <ctime>
 #include <ratio>
-#include <irrKlang.h>
 
 //#include "math.h"
 //#define GLM_ENABLE_EXPERIMENTAL
@@ -41,6 +40,7 @@ Winter 2017 - ZJW (Piddington texture write)
 #include "VFC.h"
 #include "Particle.h"
 #include "QuadTree.h"
+#include "GOid.h"
 
 //gui
 #include <imgui.h>
@@ -69,7 +69,10 @@ class Application : public EventCallbacks {
 public:
 	//ui stuff
 	bool show_UI = true;
-	float timer = 0;
+	int timer = 0;
+	bool gameEnd = false;
+	unsigned int start;
+	int endpoints = 0;
 
 	WindowManager * windowManager = nullptr;
 
@@ -278,6 +281,8 @@ public:
 		//QUESTION what is this actually for? is it checking for graphics driver compatibility?
 		GLSL::checkVersion();
 
+		start = clock();
+
 		// Set background color (pink for debug, black otherwise)
 		if (DEBUG_MODE) {
 			glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
@@ -316,7 +321,7 @@ public:
 			int r = int(rgb[i]);
 			int g = int(rgb[i + 1]);
 			int b = int(rgb[i + 2]);
-			int a = int(rgb[i + 3]);
+			//int a = int(rgb[i + 3]);
 			if (counter > Mwidth - 1) {
 				counter = 0;
 				x = 0;
@@ -325,34 +330,34 @@ public:
 
 			//cout << r << " " << g << " " << b << " x:" << x << " z:" << z << endl;
 
-			char* current = RGBtoOBJ(r, g, b);
+			GOid current = RGBtoOBJ(r, g, b);
 			//cout << current << " x:" << x << " z:" << z << endl;
 
 			//random offsets
 			float xRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 			float zRand = (static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 1.5)) - 0.75;
 
-			if (strcmp(current, "bordertree") == 0) {
+			if (GOid::Border == current) {
 				btrees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0 , z + zRand), vec3(0, 180 * xRand, 0), vec3(5 + xRand + zRand, 5 + zRand, 5 + xRand)));
 			}
-			else if (strcmp(current, "innertree") == 0) {
+			else if (GOid::Tree == current) {
 				trees->push_back(GOTree(treeShape, defaultTex, 1, vec3(-x + xRand, 0, z + zRand), vec3(0, 180 * xRand, 0), vec3(5.f + zRand)));
 			}
-			else if (strcmp(current, "cow") == 0) {
+			else if (GOid::Cow == current) {
 				numCows++;
 				cows->push_back(GOCow(cowShape, defaultTex, -x + xRand, z + zRand, cowWalk));
 			}
-			else if (strcmp(current, "haybale") == 0) {
+			else if (GOid::Haybale == current) {
 				numHay++;
 				hay->push_back(GOHaybale(hayShape, defaultTex, -x + xRand, z + zRand));
 			}
-			else if (strcmp(current, "player") == 0) {
+			else if (GOid::Player == current) {
 				player->setPos(vec3(-x, 10, z)); //boing
 			}
-			else if (strcmp(current, "mothership") == 0) {
+			else if (GOid::Mothership == current) {
 				mothership->setPos(vec3(-x, -0.5, z));
 			}
-			else if (strcmp(current, "barn") == 0) {
+			else if (GOid::Barn == current) {
 				barn->setPos(vec3(-x, 0, z));
 			}
 
@@ -380,23 +385,23 @@ public:
 	}
 
   //Gives the obj based on the RGB value
-  char* RGBtoOBJ(int R, int G, int B) {
+  GOid RGBtoOBJ(int R, int G, int B) {
     //border trees
-    if (R == 0 && G == 150 && B == 0) { return "bordertree"; }
+    if (R == 0 && G == 150 && B == 0) { return GOid::Border; }
 		//inner trees
-		else if (R == 0 && G == 255 && B == 0) { return "innertree"; }
+		else if (R == 0 && G == 255 && B == 0) { return GOid::Tree; }
     //cow
-    else if (R == 0 && G == 0 && B == 0) { return "cow"; }
+    else if (R == 0 && G == 0 && B == 0) { return GOid::Cow; }
 		//hay bales
-		else if (R == 255 && G == 150 && B == 0) { return "haybale"; }
+		else if (R == 255 && G == 150 && B == 0) { return GOid::Haybale; }
 		//barn
-		else if (R == 150 && G == 50 && B == 0) { return "barn"; }
+		else if (R == 150 && G == 50 && B == 0) { return GOid::Barn; }
     //player start position
-    else if (R == 0 && G == 0 && B == 255) { return "player"; }
+    else if (R == 0 && G == 0 && B == 255) { return GOid::Player; }
     //mothership
-    else if (R == 255 && G == 0 && B == 0) { return "mothership"; }
+    else if (R == 255 && G == 0 && B == 0) { return GOid::Mothership; }
 		//none
-		else { return "empty"; }
+		else { return GOid::DefaultObject; }
   }
 
 	// initializes skybox program
@@ -1185,8 +1190,9 @@ public:
 		ImGui::NewFrame();
 		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize;
 		window_flags |= ImGuiWindowFlags_NoBackground;
+		int timer = 0;
 
-		if (show_UI)
+		if (!gameEnd)
 		{
 			ImGui::Begin("Holy Cow", NULL, window_flags);
 			ImGui::SetWindowFontScale(2.0f);
@@ -1195,15 +1201,32 @@ public:
 
 			ImGui::Text("Cows Collected: %d / %d", collCows, numCows);
 			(ImGui::GetFontSize() * 100.0f);
-			ImGui::Text("Hay Collected: %d", collHay);
+			//ImGui::Text("Hay Collected: %d", collHay);
 
-			int cowpoints = collCows * 10;
-			int haypoints = collHay * 7;
-			int totalpoints = cowpoints - haypoints;
-			ImGui::TextColored(ImVec4(1.0, 0.5, 0.5, 1.0), "Points earned: %d", totalpoints);
+			timer += ((clock() - start) / 1000);
+
+			int cowpoints = collCows * 100;
+			int haypoints = collHay * 70;
+			int totalpoints = (cowpoints - haypoints) * 1/timer;
+			ImGui::Text("Elapsed time: %d", timer);
+
+			//ImGui::TextColored(ImVec4(1.0, 0.5, 0.5, 1.0), "Points earned: %d", totalpoints);
 			//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::End();
+
+			if (collCows == numCows) {
+				endpoints = totalpoints;
+				gameEnd = true;
+			}
 		}
+		else
+		{
+			ImGui::Begin("WIN", NULL, window_flags);
+			ImGui::SetWindowFontScale(4.0f);
+			ImGui::TextColored(ImVec4(0.0, 1.0, 0.3, 1.0), "You won with %d points!", endpoints);
+		}
+
+		ImGui::End();
+
 
 		ImGui::Render();
 		int display_w, display_h;

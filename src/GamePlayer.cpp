@@ -1,6 +1,8 @@
 #include "GamePlayer.h"
 #include "Particle.h"
 
+#include <algorithm>
+
 #define MAP_WIDTH 200
 #define MAP_LENGTH 75
 #define EPSILON 0.01
@@ -178,6 +180,8 @@ void GamePlayer::collide(GameObject *other) {
       break;
     case GOid::Tree:
       shipCollide(other);
+      break;
+    default:
       break;
   }
 }
